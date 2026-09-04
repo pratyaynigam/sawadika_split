@@ -2,177 +2,193 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Mobile-first viewport, preventing zoom for native app feel -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ThaiSplit - Seaside Edition</title>
+    <title>ThaiSplit - Trip Expense Tracker</title>
     
-    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        teal: { 500: '#008080', 600: '#006666' }, // Andaman Teal
-                        orange: { 500: '#FF6F61', 600: '#E56357' }, // Thai Sunset Orange
+                        teal: { 400: '#2dd4bf', 500: '#008080', 600: '#006666' },
+                        orange: { 400: '#fb923c', 500: '#FF6F61', 600: '#e56357' },
                         slate: { 50: '#F8FAFC', 100: '#F1F5F9', 800: '#1E293B', 900: '#0F172A' }
                     },
                     boxShadow: {
-                        'up': '0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06)',
-                        'glass': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)'
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+                        'glass-sm': '0 4px 16px 0 rgba(31, 38, 135, 0.05)',
+                        'up': '0 -4px 20px -2px rgba(0, 0, 0, 0.1)',
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
                     }
                 }
             }
         }
     </script>
+
     <style>
-        /* Custom styles for native app feel */
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             -webkit-tap-highlight-color: transparent;
             overscroll-behavior-y: none;
+            background-color: #0F172A;
         }
         
-        /* Hide scrollbar for cleaner UI */
         ::-webkit-scrollbar {
             width: 0px;
             background: transparent;
         }
 
-        /* Safe area padding for iOS notches */
-        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
-        .pt-safe { padding-top: env(safe-area-inset-top, 20px); }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 24px); }
+        .pt-safe { padding-top: env(safe-area-inset-top, 24px); }
+        .h-safe-nav { height: calc(64px + env(safe-area-inset-bottom, 24px)); }
 
-        /* Minimum 48x48px hit targets for accessibility */
-        .hit-target { min-height: 48px; min-width: 48px; }
-
-        /* Animations */
-        .modal-enter { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .modal-exit { animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-        @keyframes slideDown {
-            from { transform: translateY(0); }
-            to { transform: translateY(100%); }
+        .hit-target { 
+            min-height: 48px; 
+            min-width: 48px; 
         }
 
-        .tab-active { color: #008080; }
-        .tab-inactive { color: #64748b; }
-
-        /* Background Image with Overlay */
         .bg-seaside {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -1;
-            background-image: url('https://images.unsplash.com/photo-1506461883276-594a12b11cf3?q=80&w=1080&auto=format&fit=crop');
+            inset: 0;
+            z-index: -2;
+            background-image: url('https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?q=80&w=1080&auto=format&fit=crop');
             background-size: cover;
             background-position: center;
         }
+        
         .bg-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
+            inset: 0;
             z-index: -1;
-            background: rgba(248, 250, 252, 0.85); /* Slate-50 with 85% opacity */
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
+            background: rgba(248, 250, 252, 0.75); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
 
-        /* Glassmorphism Cards */
         .glass-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
         }
+
+        .glass-header {
+            background: rgba(255, 255, 255, 0.90);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .split-cb-wrapper input:checked + div {
+            background-color: #008080;
+            color: white;
+            border-color: #008080;
+        }
+        .split-cb-wrapper input:not(:checked) + div {
+            background-color: rgba(255, 255, 255, 0.6);
+            color: #64748b;
+            border-color: #cbd5e1;
+        }
+
+        .modal-enter { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .modal-exit { animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0.5; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes slideDown {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(100%); opacity: 0; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tab-active { color: #008080; font-weight: 700; transform: translateY(-2px); }
+        .tab-inactive { color: #64748b; font-weight: 500; }
+        
+        .btn-press { transition: all 0.2s ease; }
+        .btn-press:active { transform: scale(0.95); opacity: 0.8; }
     </style>
 </head>
-<body class="text-slate-800 h-screen w-screen overflow-hidden flex flex-col pt-safe">
+<body class="text-slate-800 h-screen w-screen overflow-hidden flex flex-col pt-safe font-sans">
 
-    <!-- Seaside Background -->
     <div class="bg-seaside"></div>
     <div class="bg-overlay"></div>
 
-    <!-- Header -->
-    <header class="glass-card shadow-sm px-4 py-3 flex justify-between items-center z-10 shrink-0">
+    <header class="glass-header px-5 py-4 flex justify-between items-center z-10 shrink-0 shadow-glass-sm rounded-b-3xl">
         <div>
-            <h1 class="text-xl font-bold text-teal-600 tracking-tight">🏝️ ThaiSplit</h1>
-            <p class="text-xs text-slate-500 font-medium">Group Trip to Thailand</p>
+            <h1 class="text-2xl font-black text-teal-600 tracking-tight">ThaiSplit 🌴</h1>
+            <p class="text-[11px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Group Tracker</p>
         </div>
-        <button id="btn-reset" class="text-orange-500 text-sm font-bold hit-target px-2 flex items-center justify-center hover:opacity-80 active:scale-95 transition-all">
-            Reset Trip
+        <button id="btn-reset" class="text-orange-500 text-xs font-bold hit-target px-3 flex items-center justify-center btn-press bg-orange-50 rounded-full border border-orange-100">
+            Reset
         </button>
     </header>
 
-    <!-- Main Content Area (Scrollable) -->
-    <main id="main-content" class="flex-1 overflow-y-auto pb-24 px-4 py-5 relative space-y-4"></main>
+    <main id="main-content" class="flex-1 overflow-y-auto pb-32 px-5 py-6 relative space-y-5 scroll-smooth"></main>
 
-    <!-- Floating Action Button (+) -->
-    <button id="btn-add-expense" class="fixed bottom-24 right-5 bg-orange-500 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg text-3xl font-light hover:bg-orange-600 active:scale-90 transition-all z-20 focus:outline-none border-2 border-white/20">
+    <button id="btn-add-expense" class="fixed bottom-28 right-6 bg-orange-500 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-lg text-4xl font-light btn-press z-20 focus:outline-none border-4 border-white/40 shadow-[0_8px_30px_rgb(255,111,97,0.4)]">
         +
     </button>
 
-    <!-- Bottom Navigation -->
-    <nav class="glass-card border-t border-slate-200/50 pb-safe shadow-up shrink-0 w-full z-10 fixed bottom-0">
-        <div class="flex justify-around items-center h-16">
-            <button onclick="switchTab('expenses')" id="tab-expenses" class="flex flex-col items-center justify-center w-full hit-target tab-active transition-colors">
-                <span class="text-xl mb-1">🧾</span>
-                <span class="text-[10px] font-bold uppercase tracking-wider">Expenses</span>
+    <nav class="glass-header pb-safe shadow-up shrink-0 w-full z-10 fixed bottom-0 rounded-t-3xl border-t border-white/60">
+        <div class="flex justify-around items-center h-20 px-2">
+            <button onclick="switchTab('expenses')" id="tab-expenses" class="flex flex-col items-center justify-center w-full hit-target tab-active transition-all duration-300">
+                <span class="text-2xl mb-1 drop-shadow-sm">🧾</span>
+                <span class="text-[10px] uppercase tracking-wider">Expenses</span>
             </button>
-            <button onclick="switchTab('balances')" id="tab-balances" class="flex flex-col items-center justify-center w-full hit-target tab-inactive transition-colors">
-                <span class="text-xl mb-1">⚖️</span>
-                <span class="text-[10px] font-bold uppercase tracking-wider">Balances</span>
+            <button onclick="switchTab('balances')" id="tab-balances" class="flex flex-col items-center justify-center w-full hit-target tab-inactive transition-all duration-300">
+                <span class="text-2xl mb-1 drop-shadow-sm">⚖️</span>
+                <span class="text-[10px] uppercase tracking-wider">Balances</span>
             </button>
-            <button onclick="switchTab('summary')" id="tab-summary" class="flex flex-col items-center justify-center w-full hit-target tab-inactive transition-colors">
-                <span class="text-xl mb-1">📊</span>
-                <span class="text-[10px] font-bold uppercase tracking-wider">Summary</span>
+            <button onclick="switchTab('summary')" id="tab-summary" class="flex flex-col items-center justify-center w-full hit-target tab-inactive transition-all duration-300">
+                <span class="text-2xl mb-1 drop-shadow-sm">📊</span>
+                <span class="text-[10px] uppercase tracking-wider">Summary</span>
             </button>
         </div>
     </nav>
 
-    <!-- FULL SCREEN MODAL: Add Expense -->
-    <div id="modal-expense" class="fixed inset-0 bg-slate-50 z-50 flex flex-col pt-safe hidden transform translate-y-full">
-        <div class="flex justify-between items-center px-4 py-3 bg-white border-b border-slate-200 shrink-0 shadow-sm">
-            <button id="btn-close-expense" class="text-slate-500 font-bold hit-target flex items-center px-2 active:opacity-70">Cancel</button>
-            <h2 class="text-lg font-bold text-slate-800">New Expense</h2>
-            <button id="btn-save-expense" class="text-teal-600 font-bold hit-target flex items-center px-2 active:opacity-70">Save</button>
+    <div id="modal-expense" class="fixed inset-0 bg-slate-50/95 backdrop-blur-xl z-50 flex flex-col pt-safe hidden transform translate-y-full">
+        <div class="flex justify-between items-center px-5 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200/50 shrink-0">
+            <button id="btn-close-expense" class="text-slate-500 font-bold hit-target flex items-center btn-press text-sm">Cancel</button>
+            <h2 class="text-lg font-bold text-slate-800">Add Expense</h2>
+            <button id="btn-save-expense" class="text-teal-600 font-bold hit-target flex items-center btn-press text-sm">Save</button>
         </div>
         
-        <div class="flex-1 overflow-y-auto px-4 py-5 space-y-6">
-            <!-- Description & Amount -->
-            <div class="space-y-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Description</label>
-                    <input type="text" id="exp-desc" placeholder="e.g., Pad Thai, Boat Ride" class="w-full text-lg border-b-2 border-slate-100 bg-transparent py-2 focus:outline-none focus:border-teal-500 transition-colors font-medium text-slate-800 placeholder-slate-300">
+        <div class="flex-1 overflow-y-auto px-5 py-6 space-y-6">
+            <div class="bg-white p-6 rounded-3xl shadow-glass-sm border border-slate-100">
+                <div class="mb-4">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">What was it for?</label>
+                    <input type="text" id="exp-desc" placeholder="e.g., Phuket Ferry, Pad Thai" class="w-full text-xl font-medium border-b-2 border-slate-100 bg-transparent py-2 focus:outline-none focus:border-teal-500 transition-colors text-slate-800 placeholder-slate-300">
                 </div>
                 <div class="pt-2">
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Amount (INR)</label>
-                    <div class="relative">
-                        <span class="absolute left-0 top-1 text-2xl text-slate-400 font-medium">₹</span>
-                        <input type="number" id="exp-amount" inputmode="decimal" placeholder="0.00" class="w-full text-3xl font-bold border-b-2 border-slate-100 bg-transparent py-2 pl-7 focus:outline-none focus:border-teal-500 transition-colors text-slate-800 placeholder-slate-300">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Amount (INR)</label>
+                    <div class="relative flex items-center">
+                        <span class="text-3xl text-slate-400 font-medium mr-2">₹</span>
+                        <input type="number" id="exp-amount" inputmode="decimal" placeholder="0" class="w-full text-5xl font-black border-b-2 border-slate-100 bg-transparent py-2 focus:outline-none focus:border-teal-500 transition-colors text-slate-800 placeholder-slate-200">
                     </div>
                 </div>
             </div>
 
-            <!-- Payer & Category -->
             <div class="grid grid-cols-2 gap-4">
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <div class="bg-white p-5 rounded-3xl shadow-glass-sm border border-slate-100 relative">
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Paid By</label>
-                    <select id="exp-payer" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 hit-target appearance-none">
-                        <!-- Populated via JS -->
-                    </select>
+                    <select id="exp-payer" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 hit-target appearance-none pr-8">
+                        </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-7 flex items-center px-2 pt-6 text-slate-400">
+                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                    </div>
                 </div>
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <div class="bg-white p-5 rounded-3xl shadow-glass-sm border border-slate-100 relative">
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Category</label>
-                    <select id="exp-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 hit-target appearance-none">
+                    <select id="exp-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 hit-target appearance-none pr-8">
                         <option value="Food">🍔 Food</option>
                         <option value="Transport">🚕 Transport</option>
                         <option value="Massage">💆 Massage</option>
@@ -180,85 +196,128 @@
                         <option value="Activities">🏄 Activities</option>
                         <option value="Misc">🛍️ Misc</option>
                     </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-7 flex items-center px-2 pt-6 text-slate-400">
+                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                    </div>
                 </div>
             </div>
 
-            <!-- Split Logic -->
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 pb-10">
-                <div class="flex justify-between items-end mb-2">
+            <div class="bg-white p-6 rounded-3xl shadow-glass-sm border border-slate-100 pb-8">
+                <div class="flex justify-between items-center mb-3">
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Split Among</label>
-                    <span id="split-calc-display" class="text-sm font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded-md">₹0 / person</span>
+                    <span id="split-calc-display" class="text-sm font-black text-teal-600 bg-teal-50 px-3 py-1 rounded-lg">₹0 / each</span>
                 </div>
-                <p class="text-[11px] text-slate-400 mb-4 leading-snug">Uncheck anyone who shouldn't pay. Amount redistributes equally.</p>
+                <p class="text-[11px] text-slate-400 mb-5 font-medium leading-relaxed">Tap to include/exclude. Amount redistributes equally among selected travelers.</p>
                 <div id="split-checkboxes" class="grid grid-cols-2 gap-3">
-                    <!-- Checkboxes populated via JS -->
-                </div>
+                    </div>
             </div>
         </div>
     </div>
 
-    <!-- FULL SCREEN MODAL: Edit Names -->
-    <div id="modal-names" class="fixed inset-0 bg-slate-50 z-50 flex flex-col pt-safe hidden transform translate-y-full">
-        <div class="flex justify-between items-center px-4 py-3 bg-white border-b border-slate-200 shrink-0 shadow-sm">
-            <button id="btn-close-names" class="text-slate-500 font-bold hit-target flex items-center px-2 active:opacity-70">Cancel</button>
+    <div id="modal-names" class="fixed inset-0 bg-slate-50/95 backdrop-blur-xl z-50 flex flex-col pt-safe hidden transform translate-y-full">
+        <div class="flex justify-between items-center px-5 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200/50 shrink-0">
+            <button id="btn-close-names" class="text-slate-500 font-bold hit-target flex items-center btn-press text-sm">Cancel</button>
             <h2 class="text-lg font-bold text-slate-800">Edit Travelers</h2>
-            <button id="btn-save-names" class="text-teal-600 font-bold hit-target flex items-center px-2 active:opacity-70">Save</button>
+            <button id="btn-save-names" class="text-teal-600 font-bold hit-target flex items-center btn-press text-sm">Save</button>
         </div>
-        <div class="flex-1 overflow-y-auto px-4 py-6">
-            <p class="text-sm text-slate-500 mb-6 font-medium">Update the names of the 8 travelers on this trip.</p>
-            <div id="names-inputs" class="space-y-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                <!-- Inputs populated via JS -->
+        <div class="flex-1 overflow-y-auto px-5 py-6">
+            <div class="bg-white p-6 rounded-3xl shadow-glass-sm border border-slate-100">
+                <p class="text-sm text-slate-500 mb-6 font-medium">Update the names of the 8 travelers on this trip. Changes will reflect in past expenses too.</p>
+                <div id="names-inputs" class="space-y-4">
+                    </div>
             </div>
         </div>
     </div>
 
-    <!-- Logic Script -->
     <script>
-        // --- Data Architecture ---
+        // --- Data Architecture & Constants ---
         const DEFAULT_TRAVELERS = ["Pratyay", "Aarushi", "Anindya", "Rwitikka", "Shiva", "Mridu", "Kotkar", "Swapnil"];
-        const STORAGE_KEY = 'thaiTripDataINR_v1';
+        const STORAGE_KEY = 'thaiTripBackup_v3';
+        
+        // Google Script API Endpoint
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVUwMueDK7RKkU953JiegITUJs-zYrLs-RfM0uZJFGjv3a4bdEt9ikK61V1E7rwTBAJg/exec';
         
         let appData = {
             travelers: [...DEFAULT_TRAVELERS],
             expenses: [] 
-            // Expense struct: { id, desc, amount, payer, category, split: { name: amount, ... }, date, isSettlement }
         };
 
-        // --- State Management ---
         let currentTab = 'expenses';
         let modalAmount = 0;
 
-        // --- Initialization ---
-        function init() {
-            loadData();
-            switchTab('expenses');
+        // --- Core Initialization ---
+        async function init() {
+            // Display a loading state while fetching cloud data
+            const main = document.getElementById('main-content');
+            main.innerHTML = `
+                <div class="h-full flex flex-col items-center justify-center text-center mt-32 fade-in">
+                    <div class="animate-pulse text-6xl mb-4">☁️</div>
+                    <h2 class="text-lg font-bold text-slate-700">Syncing with Cloud...</h2>
+                </div>
+            `;
+            
+            await loadData();
             setupEventListeners();
+            switchTab('expenses');
         }
 
-        function loadData() {
+        async function loadData() {
             try {
-                const saved = localStorage.getItem(STORAGE_KEY);
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    // Ensure valid data structure
-                    if (parsed.travelers && parsed.travelers.length === 8 && Array.isArray(parsed.expenses)) {
-                        appData = parsed;
-                    }
+                const response = await fetch(GOOGLE_SCRIPT_URL);
+                const text = await response.text();
+                
+                let saved = null;
+                if (text) {
+                    saved = JSON.parse(text);
+                }
+                
+                // Validate Cloud Data
+                if (saved && saved.travelers && saved.travelers.length === 8 && Array.isArray(saved.expenses)) {
+                    appData = saved;
+                    // Keep local backup updated with fresh cloud data
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+                } else {
+                    loadFallback();
                 }
             } catch (e) {
-                console.error("Failed to load data", e);
+                console.error("Cloud fetch failed, reverting to local backup.", e);
+                loadFallback();
             }
         }
 
-        function saveData() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+        function loadFallback() {
+            const local = localStorage.getItem(STORAGE_KEY);
+            if (local) {
+                const parsed = JSON.parse(local);
+                if (parsed && parsed.travelers) {
+                    appData = parsed;
+                }
+            }
         }
 
-        // --- Navigation ---
+        // Push data to Google Sheets
+        function saveData() {
+            // 1. Save locally instantly for a snappy UI
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+            
+            // 2. Push to Google Sheets quietly in the background
+            try {
+                fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(appData),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
+                }).then(res => res.json())
+                  .then(data => console.log("Cloud sync successful"))
+                  .catch(err => console.error("Background sync error:", err));
+            } catch (error) {
+                console.error("Failed to initiate cloud sync:", error);
+            }
+        }
+
+        // --- Navigation Handling ---
         function switchTab(tab) {
             currentTab = tab;
             
-            // Update Tab UI
             ['expenses', 'balances', 'summary'].forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 if (t === tab) {
@@ -268,14 +327,10 @@
                 }
             });
 
-            // Update FAB visibility
             document.getElementById('btn-add-expense').style.display = (tab === 'expenses') ? 'flex' : 'none';
 
-            // Render Content
             const main = document.getElementById('main-content');
             main.innerHTML = '';
-            
-            // Scroll to top
             main.scrollTop = 0;
 
             if (tab === 'expenses') renderExpenses(main);
@@ -283,53 +338,50 @@
             if (tab === 'summary') renderSummary(main);
         }
 
-        // --- Render Functions ---
-
+        // --- View Renderers ---
         function renderExpenses(container) {
             if (appData.expenses.length === 0) {
                 container.innerHTML = `
-                    <div class="h-full flex flex-col items-center justify-center text-center mt-20">
-                        <div class="text-7xl mb-6 shadow-sm bg-white rounded-full p-6 inline-block">🥥</div>
-                        <h2 class="text-xl font-bold text-slate-800 mb-2">No expenses yet!</h2>
-                        <p class="text-sm px-8 text-slate-600 font-medium">Tap the + button below to add your first expense.</p>
+                    <div class="h-full flex flex-col items-center justify-center text-center mt-24 fade-in">
+                        <div class="text-7xl mb-6 bg-white/60 backdrop-blur-sm rounded-[2rem] p-6 shadow-glass-sm border border-white/50 inline-block transform -rotate-6">🥥</div>
+                        <h2 class="text-2xl font-black text-slate-800 mb-3">No expenses yet</h2>
+                        <p class="text-sm px-10 text-slate-600 font-medium leading-relaxed">Tap the + button below to add your first transaction.</p>
                     </div>
                 `;
                 return;
             }
 
             const list = document.createElement('div');
-            list.className = 'space-y-4';
+            list.className = 'space-y-4 fade-in';
             
-            // Sort newest first
             const sorted = [...appData.expenses].reverse();
             
-            sorted.forEach(exp => {
+            sorted.forEach((exp, index) => {
                 const isSettlement = exp.isSettlement;
                 const icon = getCategoryIcon(exp.category);
-                
-                let splitText = isSettlement 
-                    ? `Paid to ${Object.keys(exp.split)[0]}` 
-                    : `Paid by ${exp.payer}`;
-
+                const splitText = isSettlement ? `Paid to ${Object.keys(exp.split)[0]}` : `Paid by ${exp.payer}`;
                 const dateStr = new Date(exp.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                const delay = Math.min(index * 0.05, 0.5);
 
                 const card = document.createElement('div');
-                card.className = 'glass-card p-4 rounded-2xl flex justify-between items-center';
+                card.className = `glass-card p-5 rounded-3xl flex justify-between items-center fade-in`;
+                card.style.animationDelay = `${delay}s`;
+                card.style.opacity = '0'; 
                 card.innerHTML = `
                     <div class="flex items-center gap-4 overflow-hidden flex-1">
-                        <div class="text-2xl bg-slate-100/80 w-12 h-12 rounded-full flex items-center justify-center shrink-0 border border-slate-200/50">
+                        <div class="text-2xl bg-white/70 w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border border-slate-100">
                             ${icon}
                         </div>
-                        <div class="truncate pr-2">
-                            <h3 class="font-bold text-slate-800 text-sm truncate">${exp.desc}</h3>
-                            <p class="text-[11px] font-semibold mt-0.5 ${isSettlement ? 'text-teal-600' : 'text-slate-500'}">${splitText}</p>
+                        <div class="truncate pr-3">
+                            <h3 class="font-bold text-slate-800 text-base truncate">${exp.desc}</h3>
+                            <p class="text-[11px] font-bold mt-1 uppercase tracking-wide ${isSettlement ? 'text-teal-600' : 'text-slate-500'}">${splitText}</p>
                         </div>
                     </div>
                     <div class="text-right shrink-0 flex flex-col items-end">
-                        <div class="font-bold text-base ${isSettlement ? 'text-teal-600' : 'text-slate-800'}">₹${exp.amount.toFixed(2)}</div>
-                        <div class="flex items-center gap-3 mt-1">
-                            <span class="text-[10px] text-slate-400 font-medium">${dateStr}</span>
-                            <button onclick="deleteExpense('${exp.id}')" class="text-[10px] text-orange-500 uppercase tracking-wider font-bold hit-target p-1 -mr-2 active:opacity-50">Delete</button>
+                        <div class="font-black text-lg ${isSettlement ? 'text-teal-600' : 'text-slate-800'}">₹${exp.amount.toFixed(2)}</div>
+                        <div class="flex items-center gap-3 mt-1.5">
+                            <span class="text-[10px] text-slate-400 font-semibold">${dateStr}</span>
+                            <button onclick="deleteExpense('${exp.id}')" class="text-[10px] text-orange-500 bg-orange-50 px-2 py-1 rounded-md uppercase tracking-wider font-bold hit-target min-h-0 min-w-0 -mr-2 btn-press">Del</button>
                         </div>
                     </div>
                 `;
@@ -343,35 +395,40 @@
 
             if (appData.expenses.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center mt-24">
-                        <div class="text-7xl mb-6 shadow-sm bg-white rounded-full p-6 inline-block">⚖️</div>
-                        <h2 class="text-xl font-bold text-slate-800 mb-2">No Debts Yet</h2>
-                        <p class="text-sm text-slate-600 font-medium">Balances will appear here once you add expenses.</p>
+                    <div class="text-center mt-28 fade-in">
+                        <div class="text-7xl mb-6 bg-white/60 backdrop-blur-sm rounded-[2rem] p-6 shadow-glass-sm border border-white/50 inline-block transform rotate-6">⚖️</div>
+                        <h2 class="text-2xl font-black text-slate-800 mb-2">No Debts</h2>
+                        <p class="text-sm text-slate-600 font-medium">Add expenses to see who owes whom.</p>
                     </div>
                 `;
                 return;
             }
 
-            let html = `<h2 class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-3 ml-1">How to settle up</h2>`;
+            let html = `<div class="fade-in">
+                <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 ml-2">Simplest Repayments</h2>`;
             
             if (transactions.length === 0) {
                 html += `
-                    <div class="glass-card border-l-4 border-l-teal-500 p-6 rounded-2xl text-center shadow-glass">
-                        <div class="text-4xl mb-3">🎉</div>
-                        <h3 class="font-bold text-slate-800 text-lg">All Settled Up!</h3>
-                        <p class="text-slate-500 text-sm mt-1 font-medium">Nobody owes anything.</p>
+                    <div class="glass-card border-l-4 border-l-teal-500 p-8 rounded-3xl text-center shadow-glass-sm mb-8">
+                        <div class="text-5xl mb-4">🎉</div>
+                        <h3 class="font-black text-slate-800 text-xl">All Settled Up!</h3>
+                        <p class="text-slate-500 text-sm mt-2 font-medium">Nobody owes anything.</p>
                     </div>
                 `;
             } else {
-                html += `<div class="space-y-3">`;
-                transactions.forEach((tx, idx) => {
+                html += `<div class="space-y-4 mb-8">`;
+                transactions.forEach((tx) => {
                     html += `
-                        <div class="glass-card p-4 rounded-2xl flex justify-between items-center shadow-glass">
-                            <div class="flex-1 pr-3">
-                                <p class="text-sm text-slate-600 font-medium"><span class="font-bold text-slate-800">${tx.from}</span> pays <span class="font-bold text-slate-800">${tx.to}</span></p>
-                                <p class="text-xl font-black text-orange-500 mt-1">₹${tx.amount.toFixed(2)}</p>
+                        <div class="glass-card p-5 rounded-3xl flex justify-between items-center shadow-glass-sm">
+                            <div class="flex-1 pr-4">
+                                <p class="text-sm text-slate-600 font-medium leading-tight">
+                                    <span class="font-black text-slate-800 text-base">${tx.from}</span> <br/>
+                                    <span class="text-xs text-slate-400 uppercase tracking-wider font-bold">pays</span> 
+                                    <span class="font-black text-slate-800 text-base">${tx.to}</span>
+                                </p>
+                                <p class="text-2xl font-black text-orange-500 mt-2">₹${tx.amount.toFixed(2)}</p>
                             </div>
-                            <button onclick="settleUp('${tx.from}', '${tx.to}', ${tx.amount})" class="bg-teal-500 text-white text-xs font-bold py-3 px-5 rounded-xl shadow-md hover:bg-teal-600 active:scale-95 transition-all hit-target whitespace-nowrap">
+                            <button onclick="settleUp('${tx.from}', '${tx.to}', ${tx.amount})" class="bg-teal-500 text-white text-xs font-bold py-3.5 px-6 rounded-2xl shadow-md hover:bg-teal-600 btn-press whitespace-nowrap shadow-[0_4px_14px_0_rgb(0,128,128,0.39)]">
                                 Settle up
                             </button>
                         </div>
@@ -380,24 +437,23 @@
                 html += `</div>`;
             }
 
-            // Net Balances Overview
-            html += `<h2 class="text-sm font-bold text-slate-500 uppercase tracking-widest mt-8 mb-3 ml-1">Net Balances</h2>`;
+            html += `<h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 ml-2 mt-8">Individual Net Balance</h2>`;
             html += `<div class="grid grid-cols-2 gap-3 mb-6">`;
             
             appData.travelers.forEach(person => {
                 const bal = balances[person] || 0;
                 let colorClass = bal > 0.01 ? 'text-teal-600' : (bal < -0.01 ? 'text-orange-500' : 'text-slate-500');
                 let prefix = bal > 0.01 ? '+' : '';
-                let bgClass = bal > 0.01 ? 'bg-teal-50/50 border-teal-100' : (bal < -0.01 ? 'bg-orange-50/50 border-orange-100' : 'glass-card border-slate-100');
+                let bgClass = bal > 0.01 ? 'bg-teal-50/70 border-teal-100' : (bal < -0.01 ? 'bg-orange-50/70 border-orange-100' : 'glass-card border-slate-100');
 
                 html += `
-                    <div class="${bgClass} p-3.5 rounded-xl border flex flex-col justify-center items-center text-center shadow-sm backdrop-blur-sm">
-                        <span class="text-xs font-bold text-slate-700 mb-1">${person}</span>
-                        <span class="text-sm font-black ${colorClass}">${prefix}₹${bal.toFixed(2)}</span>
+                    <div class="${bgClass} p-4 rounded-3xl border flex flex-col justify-center items-center text-center shadow-sm backdrop-blur-md">
+                        <span class="text-[11px] font-bold text-slate-700 mb-1 uppercase tracking-wider">${person}</span>
+                        <span class="text-lg font-black ${colorClass}">${prefix}₹${bal.toFixed(0)}</span>
                     </div>
                 `;
             });
-            html += `</div>`;
+            html += `</div></div>`;
 
             container.innerHTML = html;
         }
@@ -405,15 +461,14 @@
         function renderSummary(container) {
             const total = appData.expenses.filter(e => !e.isSettlement).reduce((sum, e) => sum + e.amount, 0);
             
-            let html = `
-                <div class="bg-gradient-to-br from-teal-500 to-teal-700 text-white p-6 rounded-3xl shadow-lg mb-6 relative overflow-hidden">
-                    <div class="absolute top-0 right-0 opacity-10 text-8xl -mt-4 -mr-4 transform rotate-12">🌴</div>
-                    <p class="text-teal-100 text-[10px] font-bold uppercase tracking-widest mb-1 relative z-10">Total Trip Cost</p>
-                    <h2 class="text-4xl font-black mb-1 relative z-10">₹${total.toFixed(2)}</h2>
+            let html = `<div class="fade-in">
+                <div class="bg-gradient-to-br from-teal-500 to-teal-700 text-white p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,128,128,0.3)] mb-8 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 opacity-10 text-9xl -mt-8 -mr-8 transform rotate-12 pointer-events-none">🌴</div>
+                    <p class="text-teal-100 text-[10px] font-bold uppercase tracking-widest mb-2 relative z-10">Total Trip Cost</p>
+                    <h2 class="text-5xl font-black mb-1 relative z-10 tracking-tight">₹${total.toFixed(0)}</h2>
                 </div>
             `;
 
-            // Category Breakdown
             let catTotals = {};
             appData.expenses.filter(e => !e.isSettlement).forEach(e => {
                 catTotals[e.category] = (catTotals[e.category] || 0) + e.amount;
@@ -421,23 +476,23 @@
             
             if(Object.keys(catTotals).length > 0) {
                 html += `
-                <div class="glass-card p-5 rounded-3xl shadow-glass mb-6">
-                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">By Category</h3>
-                    <div class="space-y-4">
+                <div class="glass-card p-6 rounded-[2rem] shadow-glass-sm mb-6">
+                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-5">Spending by Category</h3>
+                    <div class="space-y-5">
                 `;
                 
                 Object.entries(catTotals).sort((a,b) => b[1] - a[1]).forEach(([cat, amt]) => {
                     const pct = ((amt / total) * 100).toFixed(0);
                     html += `
                         <div class="flex items-center">
-                            <span class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-lg shrink-0 mr-3">${getCategoryIcon(cat)}</span>
+                            <span class="w-12 h-12 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center text-xl shrink-0 mr-4 shadow-sm">${getCategoryIcon(cat)}</span>
                             <div class="flex-1">
-                                <div class="flex justify-between mb-1.5">
+                                <div class="flex justify-between mb-2">
                                     <span class="font-bold text-slate-700 text-sm">${cat}</span>
-                                    <span class="font-bold text-slate-800 text-sm">₹${amt.toFixed(0)}</span>
+                                    <span class="font-black text-slate-800 text-sm">₹${amt.toFixed(0)}</span>
                                 </div>
-                                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                    <div class="bg-orange-400 h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+                                <div class="w-full bg-slate-100/50 rounded-full h-2.5 overflow-hidden border border-slate-200/50">
+                                    <div class="bg-orange-400 h-full rounded-full transition-all duration-700 ease-out" style="width: ${pct}%"></div>
                                 </div>
                             </div>
                         </div>
@@ -446,46 +501,36 @@
                 html += `</div></div>`;
             }
 
-            // Edit travelers button
             html += `
-                <button id="btn-open-names" class="w-full glass-card text-slate-700 font-bold py-4 rounded-2xl shadow-glass hit-target flex justify-center items-center gap-2 active:scale-95 transition-all mb-4">
-                    <span class="text-lg">👥</span> Manage Travelers
+                <button id="btn-open-names" class="w-full glass-card border border-white/60 text-slate-700 font-bold py-5 rounded-[2rem] shadow-glass-sm hit-target flex justify-center items-center gap-3 btn-press mb-4">
+                    <span class="text-xl">👥</span> Manage Travelers
                 </button>
-            `;
+            </div>`;
 
             container.innerHTML = html;
-
-            // Bind names button
             document.getElementById('btn-open-names').addEventListener('click', openNamesModal);
         }
 
-        // --- Math & Core Logic ---
-
+        // --- Core Math: Settlement Engine ---
         function calculateSettlements() {
             let balances = {};
             appData.travelers.forEach(t => balances[t] = 0);
 
-            // Calculate Net Balances
             appData.expenses.forEach(ex => {
-                // Payer is owed money (positive balance)
                 if (balances[ex.payer] !== undefined) {
-                    balances[ex.payer] += ex.amount;
+                    balances[ex.payer] += ex.amount; 
                 }
-                
-                // Splitters owe money (negative balance)
                 for (let person in ex.split) {
                     if (balances[person] !== undefined) {
-                        balances[person] -= ex.split[person];
+                        balances[person] -= ex.split[person]; 
                     }
                 }
             });
 
-            // Clean up floating point drift
             for (let t in balances) {
                 balances[t] = Math.round(balances[t] * 100) / 100;
             }
 
-            // Separate into debtors (-) and creditors (+)
             let debtors = [];
             let creditors = [];
             
@@ -497,14 +542,12 @@
                 }
             }
 
-            // Sort largest to smallest to minimize transaction count (Greedy Algorithm)
             debtors.sort((a, b) => b.amount - a.amount);
             creditors.sort((a, b) => b.amount - a.amount);
 
             let transactions = [];
             let i = 0, j = 0;
 
-            // Resolve debts
             while (i < debtors.length && j < creditors.length) {
                 let debt = debtors[i].amount;
                 let credit = creditors[j].amount;
@@ -531,48 +574,42 @@
         }
 
         function settleUp(from, to, amount) {
-            if(confirm(`Confirm: ${from} paid ₹${amount.toFixed(2)} to ${to}?`)) {
-                // Counter-transaction
-                const settlementExpense = {
+            if(confirm(`Confirm: ${from} paid ₹${amount.toFixed(0)} to ${to}?`)) {
+                const settlementExp = {
                     id: Date.now().toString(),
                     desc: `Settlement: ${from} → ${to}`,
                     amount: amount,
-                    payer: from, // Debtor pays the creditor
+                    payer: from,
                     category: "Settlement",
                     isSettlement: true,
-                    split: {
-                        [to]: amount // Creditor receives the benefit, zeroing out their owed amount
-                    },
+                    split: { [to]: amount }, 
                     date: new Date().toISOString()
                 };
 
-                appData.expenses.push(settlementExpense);
+                appData.expenses.push(settlementExp);
                 saveData();
                 renderBalances(document.getElementById('main-content'));
             }
         }
 
         function deleteExpense(id) {
-            if(confirm("Are you sure you want to delete this?")) {
+            if(confirm("Permanently delete this transaction?")) {
                 appData.expenses = appData.expenses.filter(e => e.id !== id);
                 saveData();
                 switchTab(currentTab);
             }
         }
 
-        // --- Modals & UI Interactions ---
-
+        // --- UI Interactions & Modals ---
         function setupEventListeners() {
-            // Main Reset
             document.getElementById('btn-reset').addEventListener('click', () => {
-                if(confirm("DANGER: This will permanently delete all trip data. Continue?")) {
+                if(confirm("⚠️ DANGER: This will permanently delete all expenses and reset the trip on the cloud too. Continue?")) {
                     appData = { travelers: [...DEFAULT_TRAVELERS], expenses: [] };
                     saveData();
                     switchTab('expenses');
                 }
             });
 
-            // Expense Modal
             const modalExp = document.getElementById('modal-expense');
             const amtInput = document.getElementById('exp-amount');
             
@@ -595,34 +632,32 @@
 
             document.getElementById('btn-save-expense').addEventListener('click', saveExpense);
 
-            // Names Modal
             const modalNames = document.getElementById('modal-names');
             
             document.getElementById('btn-close-names').addEventListener('click', () => {
                 modalNames.classList.replace('modal-enter', 'modal-exit');
                 setTimeout(() => modalNames.classList.add('hidden'), 300);
             });
+            
             document.getElementById('btn-save-names').addEventListener('click', saveNames);
         }
 
         function populateExpenseForm() {
-            // Reset fields
             document.getElementById('exp-desc').value = '';
-            const amtInput = document.getElementById('exp-amount');
-            amtInput.value = '';
+            document.getElementById('exp-amount').value = '';
             modalAmount = 0;
             document.getElementById('exp-category').value = 'Food';
 
-            // Populate Payer Dropdown
             const payerSelect = document.getElementById('exp-payer');
             payerSelect.innerHTML = appData.travelers.map(t => `<option value="${t}">${t}</option>`).join('');
 
-            // Populate Checkboxes for Split
             const cbContainer = document.getElementById('split-checkboxes');
             cbContainer.innerHTML = appData.travelers.map(t => `
-                <label class="flex items-center space-x-3 bg-slate-50 p-3 rounded-xl border border-slate-200 hit-target active:bg-slate-100 transition-colors">
-                    <input type="checkbox" value="${t}" class="split-cb w-5 h-5 text-teal-600 rounded focus:ring-teal-500 border-slate-300 bg-white" checked onchange="updateSplitCalculations()">
-                    <span class="text-sm font-bold text-slate-700">${t}</span>
+                <label class="split-cb-wrapper relative block hit-target cursor-pointer">
+                    <input type="checkbox" value="${t}" class="split-cb peer sr-only" checked onchange="updateSplitCalculations()">
+                    <div class="w-full h-full p-3 rounded-2xl border-2 text-center text-sm font-bold transition-colors shadow-sm flex items-center justify-center">
+                        ${t}
+                    </div>
                 </label>
             `).join('');
 
@@ -635,12 +670,12 @@
             const display = document.getElementById('split-calc-display');
             
             if (count === 0) {
-                display.innerText = "₹0 / person";
+                display.innerText = "₹0 / each";
                 display.classList.replace('text-teal-600', 'text-orange-500');
                 display.classList.replace('bg-teal-50', 'bg-orange-50');
             } else {
                 const perPerson = modalAmount / count;
-                display.innerText = `₹${perPerson.toFixed(2)} / person`;
+                display.innerText = `₹${perPerson.toFixed(0)} / each`;
                 display.classList.replace('text-orange-500', 'text-teal-600');
                 display.classList.replace('bg-orange-50', 'bg-teal-50');
             }
@@ -651,36 +686,28 @@
             const amount = parseFloat(document.getElementById('exp-amount').value);
             const payer = document.getElementById('exp-payer').value;
             const category = document.getElementById('exp-category').value;
-            
             const checkboxes = document.querySelectorAll('.split-cb:checked');
             
-            // Validation
             if (!desc) return alert("Please enter a description.");
             if (!amount || amount <= 0) return alert("Please enter a valid amount.");
-            if (checkboxes.length === 0) return alert("At least one person must be selected in the split.");
+            if (checkboxes.length === 0) return alert("Select at least one person to split with.");
 
-            // Calculate Split amounts precisely
             let splitObj = {};
-            const splitAmount = Math.round((amount / checkboxes.length) * 100) / 100;
+            const baseSplit = Math.round((amount / checkboxes.length) * 100) / 100;
+            let totalAssigned = 0;
             
-            // Handle rounding remainder to ensure it totals exactly to 'amount'
-            let assignedTotal = 0;
             checkboxes.forEach((cb, idx) => {
                 if (idx === checkboxes.length - 1) {
-                    splitObj[cb.value] = Math.round((amount - assignedTotal) * 100) / 100;
+                    splitObj[cb.value] = Math.round((amount - totalAssigned) * 100) / 100;
                 } else {
-                    splitObj[cb.value] = splitAmount;
-                    assignedTotal += splitAmount;
+                    splitObj[cb.value] = baseSplit;
+                    totalAssigned += baseSplit;
                 }
             });
 
-            // Create Object
             const newExp = {
                 id: Date.now().toString(),
-                desc,
-                amount,
-                payer,
-                category,
+                desc, amount, payer, category,
                 split: splitObj,
                 date: new Date().toISOString(),
                 isSettlement: false
@@ -689,7 +716,6 @@
             appData.expenses.push(newExp);
             saveData();
             
-            // Close & Refresh
             const modal = document.getElementById('modal-expense');
             modal.classList.replace('modal-enter', 'modal-exit');
             setTimeout(() => {
@@ -697,17 +723,15 @@
                 switchTab('expenses');
             }, 300);
         }
-
-        // --- Names Management ---
         
         function openNamesModal() {
             const modal = document.getElementById('modal-names');
             const container = document.getElementById('names-inputs');
             
             container.innerHTML = appData.travelers.map((t, i) => `
-                <div class="flex items-center space-x-3">
-                    <span class="w-6 text-center text-slate-300 text-sm font-bold">${i+1}</span>
-                    <input type="text" id="name-input-${i}" value="${t}" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 hit-target transition-all" placeholder="Traveler Name">
+                <div class="flex items-center space-x-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+                    <span class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 text-xs font-black shrink-0">${i+1}</span>
+                    <input type="text" id="name-input-${i}" value="${t}" class="flex-1 bg-transparent py-2 pr-4 text-base font-bold text-slate-800 focus:outline-none hit-target placeholder-slate-400" placeholder="Name">
                 </div>
             `).join('');
 
@@ -721,28 +745,18 @@
             for (let i = 0; i < 8; i++) {
                 let name = document.getElementById(`name-input-${i}`).value.trim();
                 if (!name) name = `Traveler ${i+1}`;
-                
-                // Ensure uniqueness
-                if (newNames.includes(name)) {
-                    name = name + ` ${i+1}`; 
-                }
+                if (newNames.includes(name)) name = name + ` ${i+1}`; 
                 newNames.push(name);
             }
 
-            // Map old names to new names in existing expenses to preserve data integrity
             let nameMap = {};
-            appData.travelers.forEach((oldName, idx) => {
-                nameMap[oldName] = newNames[idx];
-            });
+            appData.travelers.forEach((oldName, idx) => { nameMap[oldName] = newNames[idx]; });
 
             appData.expenses.forEach(ex => {
                 if (nameMap[ex.payer]) ex.payer = nameMap[ex.payer];
-                
                 let newSplit = {};
                 for (let oldPerson in ex.split) {
-                    if (nameMap[oldPerson]) {
-                        newSplit[nameMap[oldPerson]] = ex.split[oldPerson];
-                    }
+                    if (nameMap[oldPerson]) newSplit[nameMap[oldPerson]] = ex.split[oldPerson];
                 }
                 ex.split = newSplit;
             });
@@ -750,7 +764,6 @@
             appData.travelers = newNames;
             saveData();
 
-            // Close & Refresh
             const modal = document.getElementById('modal-names');
             modal.classList.replace('modal-enter', 'modal-exit');
             setTimeout(() => {
@@ -759,23 +772,12 @@
             }, 300);
         }
 
-        // --- Helpers ---
         function getCategoryIcon(cat) {
-            const icons = {
-                'Food': '🍔',
-                'Transport': '🚕',
-                'Massage': '💆',
-                'Hotel': '🏨',
-                'Activities': '🏄',
-                'Misc': '🛍️',
-                'Settlement': '🤝'
-            };
-            return icons[cat] || '🛍️';
+            const icons = { 'Food': '🍔', 'Transport': '🚕', 'Massage': '💆', 'Hotel': '🏨', 'Activities': '🏄', 'Misc': '🛍️', 'Settlement': '🤝' };
+            return icons[cat] || '🏝️';
         }
 
-        // Boot the app
         document.addEventListener('DOMContentLoaded', init);
-
     </script>
 </body>
 </html>
