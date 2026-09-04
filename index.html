@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Mobile-first viewport, preventing zoom for native app feel -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ThaiSplit - Seaside Edition</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        teal: { 500: '#008080', 600: '#006666' }, // Andaman Teal
+                        orange: { 500: '#FF6F61', 600: '#E56357' }, // Thai Sunset Orange
+                        slate: { 50: '#F8FAFC', 100: '#F1F5F9', 800: '#1E293B', 900: '#0F172A' }
+                    },
+                    boxShadow: {
+                        'up': '0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06)',
+                        'glass': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styles for native app feel */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+        }
+        
+        /* Hide scrollbar for cleaner UI */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        /* Safe area padding for iOS notches */
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .pt-safe { padding-top: env(safe-area-inset-top, 20px); }
+
+        /* Minimum 48x48px hit targets for accessibility */
+        .hit-target { min-height: 48px; min-width: 48px; }
+
+        /* Animations */
+        .modal-enter { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .modal-exit { animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        @keyframes slideDown {
+            from { transform: translateY(0); }
+            to { transform: translateY(100%); }
+        }
+
+        .tab-active { color: #008080; }
+        .tab-inactive { color: #64748b; }
+
+        /* Background Image with Overlay */
+        .bg-seaside {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            background-image: url('https://images.unsplash.com/photo-1506461883276-594a12b11cf3?q=80&w=1080&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+        }
+        .bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            background: rgba(248, 250, 252, 0.85); /* Slate-50 with 85% opacity */
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        /* Glassmorphism Cards */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+    </style>
+</head>
+<body class="text-slate-800 h-screen w-screen overflow-hidden flex flex-col pt-safe">
+
+    <!-- Seaside Background -->
+    <div class="bg-seaside"></div>
+    <div class="bg-overlay"></div>
+
+    <!-- Header -->
+    <header class="glass-card shadow-sm px-4 py-3 flex justify-between items-center z-10 shrink-0">
+        <div>
+            <h1 class="text-xl font-bold text-teal-600 tracking-tight">🏝️ ThaiSplit</h1>
+            <p class="text-xs text-slate-500 font-medium">Group Trip to Thailand</p>
+        </div>
+        <button id="btn-reset" class="text-orange-500 text-sm font-bold hit-target px-2 flex items-center justify-center hover:opacity-80 active:scale-95 transition-all">
+            Reset Trip
+        </button>
+    </header>
+
+    <!-- Main Content Area (Scrollable) -->
+    <main id="main-content" class="flex-1 overflow-y-auto pb-24 px-4 py-5 relative space-y-4"></main>
+
+    <!-- Floating Action Button (+) -->
+    <button id="btn-add-expense" class="fixed bottom-24 right-5 bg-orange-500 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg text-3xl font-light hover:bg-orange-600 active:scale-90 transition-all z-20 focus:outline-none border-2 border-white/20">
+        +
+    </button>
+
+    <!-- Bottom Navigation -->
+    <nav class="glass-card border-t border-slate-200/50 pb-safe shadow-up shrink-0 w-full z-10 fixed bottom-0">
+        <div class="flex justify-around items-center h-16">
+            <button onclick="switchTab('expenses')" id="tab-expenses" class="flex flex-col items-center justify-center w-full hit-target tab-active transition-colors">
+                <span class="text-xl mb-1">🧾</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider">Expenses</span>
+            </button>
+            <button onclick="switchTab('balances')" id="tab-balances" class="flex flex-col items-center justify-center w-full hit-target tab-inactive transition-colors">
+                <span class="text-xl mb-1">⚖️</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider">Balances</span>
+            </button>
+            <button onclick="switchTab('summary')" id="tab-summary" class="flex flex-col items-center justify-center w-full hit-target tab-inactive transition-colors">
+                <span class="text-xl mb-1">📊</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider">Summary</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- FULL SCREEN MODAL: Add Expense -->
+    <div id="modal-expense" class="fixed inset-0 bg-slate-50 z-50 flex flex-col pt-safe hidden transform translate-y-full">
+        <div class="flex justify-between items-center px-4 py-3 bg-white border-b border-slate-200 shrink-0 shadow-sm">
+            <button id="btn-close-expense" class="text-slate-500 font-bold hit-target flex items-center px-2 active:opacity-70">Cancel</button>
+            <h2 class="text-lg font-bold text-slate-800">New Expense</h2>
+            <button id="btn-save-expense" class="text-teal-600 font-bold hit-target flex items-center px-2 active:opacity-70">Save</button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto px-4 py-5 space-y-6">
+            <!-- Description & Amount -->
+            <div class="space-y-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Description</label>
+                    <input type="text" id="exp-desc" placeholder="e.g., Pad Thai, Boat Ride" class="w-full text-lg border-b-2 border-slate-100 bg-transparent py-2 focus:outline-none focus:border-teal-500 transition-colors font-medium text-slate-800 placeholder-slate-300">
+                </div>
+                <div class="pt-2">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Amount (INR)</label>
+                    <div class="relative">
+                        <span class="absolute left-0 top-1 text-2xl text-slate-400 font-medium">₹</span>
+                        <input type="number" id="exp-amount" inputmode="decimal" placeholder="0.00" class="w-full text-3xl font-bold border-b-2 border-slate-100 bg-transparent py-2 pl-7 focus:outline-none focus:border-teal-500 transition-colors text-slate-800 placeholder-slate-300">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payer & Category -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Paid By</label>
+                    <select id="exp-payer" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 hit-target appearance-none">
+                        <!-- Populated via JS -->
+                    </select>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Category</label>
+                    <select id="exp-category" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 hit-target appearance-none">
+                        <option value="Food">🍔 Food</option>
+                        <option value="Transport">🚕 Transport</option>
+                        <option value="Massage">💆 Massage</option>
+                        <option value="Hotel">🏨 Hotel</option>
+                        <option value="Activities">🏄 Activities</option>
+                        <option value="Misc">🛍️ Misc</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Split Logic -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 pb-10">
+                <div class="flex justify-between items-end mb-2">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Split Among</label>
+                    <span id="split-calc-display" class="text-sm font-bold text-teal-600 bg-teal-50 px-2 py-1 rounded-md">₹0 / person</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mb-4 leading-snug">Uncheck anyone who shouldn't pay. Amount redistributes equally.</p>
+                <div id="split-checkboxes" class="grid grid-cols-2 gap-3">
+                    <!-- Checkboxes populated via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FULL SCREEN MODAL: Edit Names -->
+    <div id="modal-names" class="fixed inset-0 bg-slate-50 z-50 flex flex-col pt-safe hidden transform translate-y-full">
+        <div class="flex justify-between items-center px-4 py-3 bg-white border-b border-slate-200 shrink-0 shadow-sm">
+            <button id="btn-close-names" class="text-slate-500 font-bold hit-target flex items-center px-2 active:opacity-70">Cancel</button>
+            <h2 class="text-lg font-bold text-slate-800">Edit Travelers</h2>
+            <button id="btn-save-names" class="text-teal-600 font-bold hit-target flex items-center px-2 active:opacity-70">Save</button>
+        </div>
+        <div class="flex-1 overflow-y-auto px-4 py-6">
+            <p class="text-sm text-slate-500 mb-6 font-medium">Update the names of the 8 travelers on this trip.</p>
+            <div id="names-inputs" class="space-y-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <!-- Inputs populated via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Logic Script -->
+    <script>
+        // --- Data Architecture ---
+        const DEFAULT_TRAVELERS = ["Pratyay", "Aarushi", "Anindya", "Rwitikka", "Shiva", "Mridu", "Kotkar", "Swapnil"];
+        const STORAGE_KEY = 'thaiTripDataINR_v1';
+        
+        let appData = {
+            travelers: [...DEFAULT_TRAVELERS],
+            expenses: [] 
+            // Expense struct: { id, desc, amount, payer, category, split: { name: amount, ... }, date, isSettlement }
+        };
+
+        // --- State Management ---
+        let currentTab = 'expenses';
+        let modalAmount = 0;
+
+        // --- Initialization ---
+        function init() {
+            loadData();
+            switchTab('expenses');
+            setupEventListeners();
+        }
+
+        function loadData() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    // Ensure valid data structure
+                    if (parsed.travelers && parsed.travelers.length === 8 && Array.isArray(parsed.expenses)) {
+                        appData = parsed;
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load data", e);
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+        }
+
+        // --- Navigation ---
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Update Tab UI
+            ['expenses', 'balances', 'summary'].forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                if (t === tab) {
+                    el.classList.replace('tab-inactive', 'tab-active');
+                } else {
+                    el.classList.replace('tab-active', 'tab-inactive');
+                }
+            });
+
+            // Update FAB visibility
+            document.getElementById('btn-add-expense').style.display = (tab === 'expenses') ? 'flex' : 'none';
+
+            // Render Content
+            const main = document.getElementById('main-content');
+            main.innerHTML = '';
+            
+            // Scroll to top
+            main.scrollTop = 0;
+
+            if (tab === 'expenses') renderExpenses(main);
+            if (tab === 'balances') renderBalances(main);
+            if (tab === 'summary') renderSummary(main);
+        }
+
+        // --- Render Functions ---
+
+        function renderExpenses(container) {
+            if (appData.expenses.length === 0) {
+                container.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-center mt-20">
+                        <div class="text-7xl mb-6 shadow-sm bg-white rounded-full p-6 inline-block">🥥</div>
+                        <h2 class="text-xl font-bold text-slate-800 mb-2">No expenses yet!</h2>
+                        <p class="text-sm px-8 text-slate-600 font-medium">Tap the + button below to add your first expense.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const list = document.createElement('div');
+            list.className = 'space-y-4';
+            
+            // Sort newest first
+            const sorted = [...appData.expenses].reverse();
+            
+            sorted.forEach(exp => {
+                const isSettlement = exp.isSettlement;
+                const icon = getCategoryIcon(exp.category);
+                
+                let splitText = isSettlement 
+                    ? `Paid to ${Object.keys(exp.split)[0]}` 
+                    : `Paid by ${exp.payer}`;
+
+                const dateStr = new Date(exp.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+
+                const card = document.createElement('div');
+                card.className = 'glass-card p-4 rounded-2xl flex justify-between items-center';
+                card.innerHTML = `
+                    <div class="flex items-center gap-4 overflow-hidden flex-1">
+                        <div class="text-2xl bg-slate-100/80 w-12 h-12 rounded-full flex items-center justify-center shrink-0 border border-slate-200/50">
+                            ${icon}
+                        </div>
+                        <div class="truncate pr-2">
+                            <h3 class="font-bold text-slate-800 text-sm truncate">${exp.desc}</h3>
+                            <p class="text-[11px] font-semibold mt-0.5 ${isSettlement ? 'text-teal-600' : 'text-slate-500'}">${splitText}</p>
+                        </div>
+                    </div>
+                    <div class="text-right shrink-0 flex flex-col items-end">
+                        <div class="font-bold text-base ${isSettlement ? 'text-teal-600' : 'text-slate-800'}">₹${exp.amount.toFixed(2)}</div>
+                        <div class="flex items-center gap-3 mt-1">
+                            <span class="text-[10px] text-slate-400 font-medium">${dateStr}</span>
+                            <button onclick="deleteExpense('${exp.id}')" class="text-[10px] text-orange-500 uppercase tracking-wider font-bold hit-target p-1 -mr-2 active:opacity-50">Delete</button>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+            container.appendChild(list);
+        }
+
+        function renderBalances(container) {
+            const { balances, transactions } = calculateSettlements();
+
+            if (appData.expenses.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center mt-24">
+                        <div class="text-7xl mb-6 shadow-sm bg-white rounded-full p-6 inline-block">⚖️</div>
+                        <h2 class="text-xl font-bold text-slate-800 mb-2">No Debts Yet</h2>
+                        <p class="text-sm text-slate-600 font-medium">Balances will appear here once you add expenses.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `<h2 class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-3 ml-1">How to settle up</h2>`;
+            
+            if (transactions.length === 0) {
+                html += `
+                    <div class="glass-card border-l-4 border-l-teal-500 p-6 rounded-2xl text-center shadow-glass">
+                        <div class="text-4xl mb-3">🎉</div>
+                        <h3 class="font-bold text-slate-800 text-lg">All Settled Up!</h3>
+                        <p class="text-slate-500 text-sm mt-1 font-medium">Nobody owes anything.</p>
+                    </div>
+                `;
+            } else {
+                html += `<div class="space-y-3">`;
+                transactions.forEach((tx, idx) => {
+                    html += `
+                        <div class="glass-card p-4 rounded-2xl flex justify-between items-center shadow-glass">
+                            <div class="flex-1 pr-3">
+                                <p class="text-sm text-slate-600 font-medium"><span class="font-bold text-slate-800">${tx.from}</span> pays <span class="font-bold text-slate-800">${tx.to}</span></p>
+                                <p class="text-xl font-black text-orange-500 mt-1">₹${tx.amount.toFixed(2)}</p>
+                            </div>
+                            <button onclick="settleUp('${tx.from}', '${tx.to}', ${tx.amount})" class="bg-teal-500 text-white text-xs font-bold py-3 px-5 rounded-xl shadow-md hover:bg-teal-600 active:scale-95 transition-all hit-target whitespace-nowrap">
+                                Settle up
+                            </button>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+
+            // Net Balances Overview
+            html += `<h2 class="text-sm font-bold text-slate-500 uppercase tracking-widest mt-8 mb-3 ml-1">Net Balances</h2>`;
+            html += `<div class="grid grid-cols-2 gap-3 mb-6">`;
+            
+            appData.travelers.forEach(person => {
+                const bal = balances[person] || 0;
+                let colorClass = bal > 0.01 ? 'text-teal-600' : (bal < -0.01 ? 'text-orange-500' : 'text-slate-500');
+                let prefix = bal > 0.01 ? '+' : '';
+                let bgClass = bal > 0.01 ? 'bg-teal-50/50 border-teal-100' : (bal < -0.01 ? 'bg-orange-50/50 border-orange-100' : 'glass-card border-slate-100');
+
+                html += `
+                    <div class="${bgClass} p-3.5 rounded-xl border flex flex-col justify-center items-center text-center shadow-sm backdrop-blur-sm">
+                        <span class="text-xs font-bold text-slate-700 mb-1">${person}</span>
+                        <span class="text-sm font-black ${colorClass}">${prefix}₹${bal.toFixed(2)}</span>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+
+            container.innerHTML = html;
+        }
+
+        function renderSummary(container) {
+            const total = appData.expenses.filter(e => !e.isSettlement).reduce((sum, e) => sum + e.amount, 0);
+            
+            let html = `
+                <div class="bg-gradient-to-br from-teal-500 to-teal-700 text-white p-6 rounded-3xl shadow-lg mb-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 opacity-10 text-8xl -mt-4 -mr-4 transform rotate-12">🌴</div>
+                    <p class="text-teal-100 text-[10px] font-bold uppercase tracking-widest mb-1 relative z-10">Total Trip Cost</p>
+                    <h2 class="text-4xl font-black mb-1 relative z-10">₹${total.toFixed(2)}</h2>
+                </div>
+            `;
+
+            // Category Breakdown
+            let catTotals = {};
+            appData.expenses.filter(e => !e.isSettlement).forEach(e => {
+                catTotals[e.category] = (catTotals[e.category] || 0) + e.amount;
+            });
+            
+            if(Object.keys(catTotals).length > 0) {
+                html += `
+                <div class="glass-card p-5 rounded-3xl shadow-glass mb-6">
+                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">By Category</h3>
+                    <div class="space-y-4">
+                `;
+                
+                Object.entries(catTotals).sort((a,b) => b[1] - a[1]).forEach(([cat, amt]) => {
+                    const pct = ((amt / total) * 100).toFixed(0);
+                    html += `
+                        <div class="flex items-center">
+                            <span class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-lg shrink-0 mr-3">${getCategoryIcon(cat)}</span>
+                            <div class="flex-1">
+                                <div class="flex justify-between mb-1.5">
+                                    <span class="font-bold text-slate-700 text-sm">${cat}</span>
+                                    <span class="font-bold text-slate-800 text-sm">₹${amt.toFixed(0)}</span>
+                                </div>
+                                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                    <div class="bg-orange-400 h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div></div>`;
+            }
+
+            // Edit travelers button
+            html += `
+                <button id="btn-open-names" class="w-full glass-card text-slate-700 font-bold py-4 rounded-2xl shadow-glass hit-target flex justify-center items-center gap-2 active:scale-95 transition-all mb-4">
+                    <span class="text-lg">👥</span> Manage Travelers
+                </button>
+            `;
+
+            container.innerHTML = html;
+
+            // Bind names button
+            document.getElementById('btn-open-names').addEventListener('click', openNamesModal);
+        }
+
+        // --- Math & Core Logic ---
+
+        function calculateSettlements() {
+            let balances = {};
+            appData.travelers.forEach(t => balances[t] = 0);
+
+            // Calculate Net Balances
+            appData.expenses.forEach(ex => {
+                // Payer is owed money (positive balance)
+                if (balances[ex.payer] !== undefined) {
+                    balances[ex.payer] += ex.amount;
+                }
+                
+                // Splitters owe money (negative balance)
+                for (let person in ex.split) {
+                    if (balances[person] !== undefined) {
+                        balances[person] -= ex.split[person];
+                    }
+                }
+            });
+
+            // Clean up floating point drift
+            for (let t in balances) {
+                balances[t] = Math.round(balances[t] * 100) / 100;
+            }
+
+            // Separate into debtors (-) and creditors (+)
+            let debtors = [];
+            let creditors = [];
+            
+            for (let person in balances) {
+                if (balances[person] < -0.01) {
+                    debtors.push({ person, amount: -balances[person] });
+                } else if (balances[person] > 0.01) {
+                    creditors.push({ person, amount: balances[person] });
+                }
+            }
+
+            // Sort largest to smallest to minimize transaction count (Greedy Algorithm)
+            debtors.sort((a, b) => b.amount - a.amount);
+            creditors.sort((a, b) => b.amount - a.amount);
+
+            let transactions = [];
+            let i = 0, j = 0;
+
+            // Resolve debts
+            while (i < debtors.length && j < creditors.length) {
+                let debt = debtors[i].amount;
+                let credit = creditors[j].amount;
+                let amount = Math.min(debt, credit);
+                
+                amount = Math.round(amount * 100) / 100; 
+
+                if (amount > 0) {
+                    transactions.push({
+                        from: debtors[i].person,
+                        to: creditors[j].person,
+                        amount: amount
+                    });
+                }
+
+                debtors[i].amount = Math.round((debtors[i].amount - amount) * 100) / 100;
+                creditors[j].amount = Math.round((creditors[j].amount - amount) * 100) / 100;
+
+                if (debtors[i].amount < 0.01) i++;
+                if (creditors[j].amount < 0.01) j++;
+            }
+
+            return { balances, transactions };
+        }
+
+        function settleUp(from, to, amount) {
+            if(confirm(`Confirm: ${from} paid ₹${amount.toFixed(2)} to ${to}?`)) {
+                // Counter-transaction
+                const settlementExpense = {
+                    id: Date.now().toString(),
+                    desc: `Settlement: ${from} → ${to}`,
+                    amount: amount,
+                    payer: from, // Debtor pays the creditor
+                    category: "Settlement",
+                    isSettlement: true,
+                    split: {
+                        [to]: amount // Creditor receives the benefit, zeroing out their owed amount
+                    },
+                    date: new Date().toISOString()
+                };
+
+                appData.expenses.push(settlementExpense);
+                saveData();
+                renderBalances(document.getElementById('main-content'));
+            }
+        }
+
+        function deleteExpense(id) {
+            if(confirm("Are you sure you want to delete this?")) {
+                appData.expenses = appData.expenses.filter(e => e.id !== id);
+                saveData();
+                switchTab(currentTab);
+            }
+        }
+
+        // --- Modals & UI Interactions ---
+
+        function setupEventListeners() {
+            // Main Reset
+            document.getElementById('btn-reset').addEventListener('click', () => {
+                if(confirm("DANGER: This will permanently delete all trip data. Continue?")) {
+                    appData = { travelers: [...DEFAULT_TRAVELERS], expenses: [] };
+                    saveData();
+                    switchTab('expenses');
+                }
+            });
+
+            // Expense Modal
+            const modalExp = document.getElementById('modal-expense');
+            const amtInput = document.getElementById('exp-amount');
+            
+            document.getElementById('btn-add-expense').addEventListener('click', () => {
+                populateExpenseForm();
+                modalExp.classList.remove('hidden');
+                modalExp.classList.add('modal-enter');
+                modalExp.classList.remove('modal-exit');
+            });
+
+            document.getElementById('btn-close-expense').addEventListener('click', () => {
+                modalExp.classList.replace('modal-enter', 'modal-exit');
+                setTimeout(() => modalExp.classList.add('hidden'), 300);
+            });
+
+            amtInput.addEventListener('input', (e) => {
+                modalAmount = parseFloat(e.target.value) || 0;
+                updateSplitCalculations();
+            });
+
+            document.getElementById('btn-save-expense').addEventListener('click', saveExpense);
+
+            // Names Modal
+            const modalNames = document.getElementById('modal-names');
+            
+            document.getElementById('btn-close-names').addEventListener('click', () => {
+                modalNames.classList.replace('modal-enter', 'modal-exit');
+                setTimeout(() => modalNames.classList.add('hidden'), 300);
+            });
+            document.getElementById('btn-save-names').addEventListener('click', saveNames);
+        }
+
+        function populateExpenseForm() {
+            // Reset fields
+            document.getElementById('exp-desc').value = '';
+            const amtInput = document.getElementById('exp-amount');
+            amtInput.value = '';
+            modalAmount = 0;
+            document.getElementById('exp-category').value = 'Food';
+
+            // Populate Payer Dropdown
+            const payerSelect = document.getElementById('exp-payer');
+            payerSelect.innerHTML = appData.travelers.map(t => `<option value="${t}">${t}</option>`).join('');
+
+            // Populate Checkboxes for Split
+            const cbContainer = document.getElementById('split-checkboxes');
+            cbContainer.innerHTML = appData.travelers.map(t => `
+                <label class="flex items-center space-x-3 bg-slate-50 p-3 rounded-xl border border-slate-200 hit-target active:bg-slate-100 transition-colors">
+                    <input type="checkbox" value="${t}" class="split-cb w-5 h-5 text-teal-600 rounded focus:ring-teal-500 border-slate-300 bg-white" checked onchange="updateSplitCalculations()">
+                    <span class="text-sm font-bold text-slate-700">${t}</span>
+                </label>
+            `).join('');
+
+            updateSplitCalculations();
+        }
+
+        window.updateSplitCalculations = function() {
+            const checkboxes = document.querySelectorAll('.split-cb:checked');
+            const count = checkboxes.length;
+            const display = document.getElementById('split-calc-display');
+            
+            if (count === 0) {
+                display.innerText = "₹0 / person";
+                display.classList.replace('text-teal-600', 'text-orange-500');
+                display.classList.replace('bg-teal-50', 'bg-orange-50');
+            } else {
+                const perPerson = modalAmount / count;
+                display.innerText = `₹${perPerson.toFixed(2)} / person`;
+                display.classList.replace('text-orange-500', 'text-teal-600');
+                display.classList.replace('bg-orange-50', 'bg-teal-50');
+            }
+        };
+
+        function saveExpense() {
+            const desc = document.getElementById('exp-desc').value.trim();
+            const amount = parseFloat(document.getElementById('exp-amount').value);
+            const payer = document.getElementById('exp-payer').value;
+            const category = document.getElementById('exp-category').value;
+            
+            const checkboxes = document.querySelectorAll('.split-cb:checked');
+            
+            // Validation
+            if (!desc) return alert("Please enter a description.");
+            if (!amount || amount <= 0) return alert("Please enter a valid amount.");
+            if (checkboxes.length === 0) return alert("At least one person must be selected in the split.");
+
+            // Calculate Split amounts precisely
+            let splitObj = {};
+            const splitAmount = Math.round((amount / checkboxes.length) * 100) / 100;
+            
+            // Handle rounding remainder to ensure it totals exactly to 'amount'
+            let assignedTotal = 0;
+            checkboxes.forEach((cb, idx) => {
+                if (idx === checkboxes.length - 1) {
+                    splitObj[cb.value] = Math.round((amount - assignedTotal) * 100) / 100;
+                } else {
+                    splitObj[cb.value] = splitAmount;
+                    assignedTotal += splitAmount;
+                }
+            });
+
+            // Create Object
+            const newExp = {
+                id: Date.now().toString(),
+                desc,
+                amount,
+                payer,
+                category,
+                split: splitObj,
+                date: new Date().toISOString(),
+                isSettlement: false
+            };
+
+            appData.expenses.push(newExp);
+            saveData();
+            
+            // Close & Refresh
+            const modal = document.getElementById('modal-expense');
+            modal.classList.replace('modal-enter', 'modal-exit');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                switchTab('expenses');
+            }, 300);
+        }
+
+        // --- Names Management ---
+        
+        function openNamesModal() {
+            const modal = document.getElementById('modal-names');
+            const container = document.getElementById('names-inputs');
+            
+            container.innerHTML = appData.travelers.map((t, i) => `
+                <div class="flex items-center space-x-3">
+                    <span class="w-6 text-center text-slate-300 text-sm font-bold">${i+1}</span>
+                    <input type="text" id="name-input-${i}" value="${t}" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100 hit-target transition-all" placeholder="Traveler Name">
+                </div>
+            `).join('');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('modal-enter');
+            modal.classList.remove('modal-exit');
+        }
+
+        function saveNames() {
+            let newNames = [];
+            for (let i = 0; i < 8; i++) {
+                let name = document.getElementById(`name-input-${i}`).value.trim();
+                if (!name) name = `Traveler ${i+1}`;
+                
+                // Ensure uniqueness
+                if (newNames.includes(name)) {
+                    name = name + ` ${i+1}`; 
+                }
+                newNames.push(name);
+            }
+
+            // Map old names to new names in existing expenses to preserve data integrity
+            let nameMap = {};
+            appData.travelers.forEach((oldName, idx) => {
+                nameMap[oldName] = newNames[idx];
+            });
+
+            appData.expenses.forEach(ex => {
+                if (nameMap[ex.payer]) ex.payer = nameMap[ex.payer];
+                
+                let newSplit = {};
+                for (let oldPerson in ex.split) {
+                    if (nameMap[oldPerson]) {
+                        newSplit[nameMap[oldPerson]] = ex.split[oldPerson];
+                    }
+                }
+                ex.split = newSplit;
+            });
+
+            appData.travelers = newNames;
+            saveData();
+
+            // Close & Refresh
+            const modal = document.getElementById('modal-names');
+            modal.classList.replace('modal-enter', 'modal-exit');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                switchTab('summary');
+            }, 300);
+        }
+
+        // --- Helpers ---
+        function getCategoryIcon(cat) {
+            const icons = {
+                'Food': '🍔',
+                'Transport': '🚕',
+                'Massage': '💆',
+                'Hotel': '🏨',
+                'Activities': '🏄',
+                'Misc': '🛍️',
+                'Settlement': '🤝'
+            };
+            return icons[cat] || '🛍️';
+        }
+
+        // Boot the app
+        document.addEventListener('DOMContentLoaded', init);
+
+    </script>
+</body>
+</html>
