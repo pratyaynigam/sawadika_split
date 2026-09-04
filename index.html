@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ThaiSplit - Trip Expense Tracker</title>
+    <title>Sasta Splitwise</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -602,11 +602,20 @@
 
         // --- UI Interactions & Modals ---
         function setupEventListeners() {
+            // Password Protection for Reset
             document.getElementById('btn-reset').addEventListener('click', () => {
-                if(confirm("⚠️ DANGER: This will permanently delete all expenses and reset the trip on the cloud too. Continue?")) {
-                    appData = { travelers: [...DEFAULT_TRAVELERS], expenses: [] };
-                    saveData();
-                    switchTab('expenses');
+                const pass = prompt("🔒 Enter admin password to reset trip:");
+                if (pass === null) return; // User clicked Cancel
+                
+                if (pass === "Prat@112890") {
+                    if(confirm("⚠️ DANGER: This will permanently delete all expenses and reset the trip on the cloud too. Are you absolutely sure?")) {
+                        appData = { travelers: [...DEFAULT_TRAVELERS], expenses: [] };
+                        saveData();
+                        switchTab('expenses');
+                        alert("Trip has been successfully reset.");
+                    }
+                } else {
+                    alert("❌ Incorrect password. Reset aborted.");
                 }
             });
 
