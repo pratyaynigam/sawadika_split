@@ -94,7 +94,7 @@
     <div id="splash-screen" class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-slate-50/90 backdrop-blur-xl transition-opacity duration-300">
         <div class="animate-pulse text-7xl mb-4">🌴</div>
         <h2 class="text-xl font-black text-teal-600">ThaiSplit</h2>
-        <p class="text-xs font-bold text-slate-500 mt-2 uppercase tracking-widest">Loading Trip Data...</p>
+        <p class="text-xs font-bold text-slate-500 mt-2 uppercase tracking-widest">Syncing with Cloud...</p>
     </div>
 
     <!-- CUSTOM LOGIN SCREEN -->
@@ -128,7 +128,10 @@
     <div id="app-wrapper" class="hidden flex-col h-full w-full">
         <header class="glass-header px-5 py-4 flex justify-between items-center z-10 shrink-0 shadow-glass-sm rounded-b-3xl">
             <div>
-                <h1 class="text-2xl font-black text-teal-600 tracking-tight">ThaiSplit 🌴</h1>
+                <!-- V1.5 Version Tag Added Here -->
+                <h1 class="text-2xl font-black text-teal-600 tracking-tight flex items-baseline">
+                    ThaiSplit 🌴 <span class="text-[10px] text-slate-400 font-bold ml-1.5 tracking-normal uppercase">V1.5</span>
+                </h1>
                 <p id="user-greeting" class="text-[11px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Welcome</p>
             </div>
             <div class="flex items-center gap-2">
@@ -172,7 +175,7 @@
         <div class="flex justify-between items-center px-5 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200/50 shrink-0 relative z-20">
             <button id="btn-close-expense" class="text-slate-500 font-bold hit-target flex items-center btn-press text-sm">Cancel</button>
             <h2 id="modal-expense-title" class="text-lg font-bold text-slate-800">Add Expense</h2>
-            <button id="btn-save-expense" class="text-teal-600 font-bold hit-target flex items-center btn-press text-sm">Save</button>
+            <button id="btn-save-expense" class="text-teal-600 font-bold hit-target flex items-center justify-end btn-press text-sm w-12">Save</button>
         </div>
         
         <div class="flex-1 overflow-y-auto px-5 py-6 space-y-6 relative">
@@ -232,23 +235,23 @@
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Split Among</label>
                     <span id="split-calc-display" class="text-sm font-black text-teal-600 bg-teal-50 px-3 py-1 rounded-lg">₹0 / each</span>
                 </div>
-                <p class="text-[11px] text-slate-400 mb-5 font-medium leading-relaxed">Tap to include/exclude. Amount redistributes equally among selected travelers.</p>
+                <p class="text-[11px] text-slate-400 mb-5 font-medium leading-relaxed">Tap to include/exclude. Amount redistributes equally.</p>
                 <div id="split-checkboxes" class="grid grid-cols-2 gap-3"></div>
             </div>
         </div>
     </div>
 
-    <!-- FULL SCREEN MODAL: Expense Details -->
+    <!-- Expense Details Modal -->
     <div id="modal-details" class="fixed inset-0 bg-slate-50/95 backdrop-blur-xl z-50 flex flex-col pt-safe hidden transform translate-y-full">
         <div class="flex justify-between items-center px-5 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200/50 shrink-0">
             <button onclick="closeDetailsModal()" class="text-slate-500 font-bold hit-target flex items-center btn-press text-sm">Close</button>
             <h2 class="text-lg font-bold text-slate-800">Expense Details</h2>
-            <button id="btn-edit-expense" class="text-teal-600 font-bold hit-target flex items-center justify-end btn-press text-sm">Edit</button>
+            <button id="btn-edit-expense" class="text-teal-600 font-bold hit-target flex items-center justify-end btn-press text-sm w-12">Edit</button>
         </div>
         <div id="details-content" class="flex-1 overflow-y-auto px-5 py-6 space-y-6"></div>
     </div>
 
-    <!-- FULL SCREEN MODAL: Manage Travelers -->
+    <!-- Manage Travelers Modal -->
     <div id="modal-names" class="fixed inset-0 bg-slate-50/95 backdrop-blur-xl z-50 flex flex-col pt-safe hidden transform translate-y-full">
         <div class="flex justify-between items-center px-5 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200/50 shrink-0">
             <button id="btn-close-names" class="text-slate-500 font-bold hit-target flex items-center btn-press text-sm">Done</button>
@@ -277,8 +280,7 @@
         // ==========================================
         const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVUwMueDK7RKkU953JiegITUJs-zYrLs-RfM0uZJFGjv3a4bdEt9ikK61V1E7rwTBAJg/exec'; 
         
-        // --- Data Architecture & Constants ---
-        const STORAGE_KEY = 'thaiTripData_v7';
+        const STORAGE_KEY = 'thaiTripData_v8'; 
         const USER_KEY = 'thaiTripCurrentUser';
         const THB_TO_INR_RATE = 2.92;
         
@@ -286,9 +288,9 @@
         let currentTab = 'expenses';
         let modalAmount = 0;
         let currentUser = null; 
-        let editingExpenseId = null; // Tracks if we are editing vs adding
+        let editingExpenseId = null;
 
-        // --- Init & Cloud Data Sync ---
+        // --- Core Engine & Merging Sync ---
         window.onload = async function () {
             await loadData();
             
@@ -301,7 +303,7 @@
                 currentUser = JSON.parse(savedUser);
                 if (!appData.travelers.includes(currentUser.name)) {
                     appData.travelers.push(currentUser.name);
-                    await saveData();
+                    await saveData(); 
                 }
                 startMainApp();
             } else {
@@ -313,12 +315,12 @@
             try {
                 const response = await fetch(GOOGLE_SCRIPT_URL);
                 const text = await response.text();
-                let saved = null;
-                if (text) saved = JSON.parse(text);
+                let cloudData = null;
+                if (text) cloudData = JSON.parse(text);
                 
-                if (saved && Array.isArray(saved.travelers) && Array.isArray(saved.expenses)) {
-                    appData = saved;
-                    if(!appData.activities) appData.activities = []; // Ensure activities array exists
+                if (cloudData && Array.isArray(cloudData.travelers)) {
+                    appData = cloudData;
+                    if(!appData.activities) appData.activities = [];
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
                 } else {
                     loadFallback();
@@ -340,22 +342,72 @@
             }
         }
 
+        // SMART SYNC MERGE ENGINE - Prevents Data Overwrites!
         async function saveData() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
             try {
+                // 1. Fetch exact latest state from the cloud right before pushing
+                const response = await fetch(GOOGLE_SCRIPT_URL);
+                const text = await response.text();
+                let cloudData = { travelers: [], expenses: [], activities: [] };
+                if (text) {
+                    try { cloudData = JSON.parse(text); } catch(e) {}
+                }
+
+                // 2. Merge Travelers (Union of both arrays)
+                const mergedTravelers = [...new Set([...(cloudData.travelers || []), ...(appData.travelers || [])])];
+
+                // 3. Merge Activities (Union by ID)
+                const actMap = new Map();
+                (cloudData.activities || []).forEach(a => actMap.set(a.id, a));
+                (appData.activities || []).forEach(a => actMap.set(a.id, a));
+                const mergedActivities = Array.from(actMap.values()).sort((a, b) => b.id - a.id);
+
+                // 4. Merge Expenses (Resolve conflicts using updatedAt timestamp)
+                const expMap = new Map();
+                (cloudData.expenses || []).forEach(e => {
+                    if(!e.updatedAt) e.updatedAt = parseInt(e.id) || 0; 
+                    expMap.set(e.id, e);
+                });
+
+                (appData.expenses || []).forEach(localExp => {
+                    if(!localExp.updatedAt) localExp.updatedAt = parseInt(localExp.id) || 0;
+                    const cloudExp = expMap.get(localExp.id);
+                    // Local wins if it is newer or doesn't exist in cloud
+                    if (!cloudExp || localExp.updatedAt > cloudExp.updatedAt) {
+                        expMap.set(localExp.id, localExp);
+                    }
+                });
+
+                const mergedExpenses = Array.from(expMap.values());
+
+                // 5. Update local state
+                appData = {
+                    travelers: mergedTravelers,
+                    expenses: mergedExpenses,
+                    activities: mergedActivities
+                };
+
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+
+                // 6. Push perfect merged state to cloud
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify(appData),
+                    redirect: 'follow',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
                 });
-            } catch (error) { console.error("Cloud sync failed. Saved locally."); }
+
+            } catch (error) {
+                console.error("Cloud sync failed. Saved locally.");
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+            }
         }
 
         function logActivity(type, desc, amount, byUser) {
             if(!appData.activities) appData.activities = [];
             appData.activities.push({
                 id: Date.now().toString(),
-                type: type, // 'ADD', 'EDIT', 'DELETE', 'SETTLE'
+                type: type, 
                 desc: desc,
                 amount: amount,
                 by: byUser,
@@ -436,9 +488,16 @@
             if (tab === 'activity') renderActivity(main);
         }
 
+        // --- Core Helpers ---
+        function getValidExpenses() {
+            // Filters out soft-deleted items
+            return appData.expenses.filter(e => !e.isDeleted);
+        }
+
         // --- Renderers ---
         function renderExpenses(container) {
-            if (appData.expenses.length === 0) {
+            const validExps = getValidExpenses();
+            if (validExps.length === 0) {
                 container.innerHTML = `
                     <div class="h-full flex flex-col items-center justify-center text-center mt-24 fade-in">
                         <div class="text-7xl mb-6 bg-white/60 backdrop-blur-sm rounded-[2rem] p-6 shadow-glass-sm border border-white/50 inline-block transform -rotate-6">🥥</div>
@@ -450,7 +509,7 @@
 
             const list = document.createElement('div');
             list.className = 'space-y-4 fade-in';
-            const sorted = [...appData.expenses].reverse();
+            const sorted = [...validExps].reverse();
             
             sorted.forEach((exp, index) => {
                 const isSettlement = exp.isSettlement;
@@ -498,8 +557,9 @@
             }
 
             const { balances, transactions } = calculateSettlements();
+            const validExps = getValidExpenses();
 
-            if (appData.expenses.length === 0) {
+            if (validExps.length === 0) {
                 container.innerHTML = `
                     <div class="text-center mt-28 fade-in">
                         <div class="text-7xl mb-6 bg-white/60 backdrop-blur-sm rounded-[2rem] p-6 shadow-glass-sm border border-white/50 inline-block transform rotate-6">⚖️</div>
@@ -564,7 +624,8 @@
         }
 
         function renderSummary(container) {
-            const total = appData.expenses.filter(e => !e.isSettlement).reduce((sum, e) => sum + e.amount, 0);
+            const validExps = getValidExpenses();
+            const total = validExps.filter(e => !e.isSettlement).reduce((sum, e) => sum + e.amount, 0);
             
             let html = `<div class="fade-in">
                 <div class="bg-gradient-to-br from-teal-500 to-teal-700 text-white p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,128,128,0.3)] mb-8 relative overflow-hidden">
@@ -574,7 +635,7 @@
                 </div>`;
 
             let catTotals = {};
-            appData.expenses.filter(e => !e.isSettlement).forEach(e => {
+            validExps.filter(e => !e.isSettlement).forEach(e => {
                 catTotals[e.category] = (catTotals[e.category] || 0) + e.amount;
             });
             
@@ -624,8 +685,6 @@
             }
 
             let html = `<div class="fade-in space-y-3">`;
-            
-            // Sort newest first
             const sortedActivities = [...appData.activities].reverse();
 
             sortedActivities.forEach((act, index) => {
@@ -634,10 +693,7 @@
                 const timeStr = dateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute:'2-digit' });
                 const delay = Math.min(index * 0.05, 0.5);
                 
-                let icon = '📝';
-                let actionText = 'updated';
-                let color = 'text-teal-600';
-
+                let icon = '📝'; let actionText = 'updated'; let color = 'text-teal-600';
                 if (act.type === 'ADD') { icon = '✨'; actionText = 'added'; }
                 if (act.type === 'DELETE') { icon = '🗑️'; actionText = 'deleted'; color = 'text-orange-500'; }
                 if (act.type === 'SETTLE') { icon = '🤝'; actionText = 'logged'; }
@@ -670,7 +726,8 @@
             let balances = {};
             appData.travelers.forEach(t => balances[t] = 0);
 
-            appData.expenses.forEach(ex => {
+            const validExps = getValidExpenses();
+            validExps.forEach(ex => {
                 if (balances[ex.payer] !== undefined) balances[ex.payer] += ex.amount; 
                 for (let person in ex.split) {
                     if (balances[person] !== undefined) balances[person] -= ex.split[person]; 
@@ -680,14 +737,12 @@
             for (let t in balances) balances[t] = Math.round(balances[t] * 100) / 100;
 
             let debtors = []; let creditors = [];
-            
             for (let person in balances) {
                 if (balances[person] < -0.01) debtors.push({ person, amount: -balances[person] });
                 else if (balances[person] > 0.01) creditors.push({ person, amount: balances[person] });
             }
 
             debtors.sort((a, b) => b.amount - a.amount); creditors.sort((a, b) => b.amount - a.amount);
-
             let transactions = []; let i = 0, j = 0;
 
             while (i < debtors.length && j < creditors.length) {
@@ -712,7 +767,9 @@
             
             if(confirm(`Confirm: ${fromName} paid ₹${amount.toFixed(0)} to ${toName}?`)) {
                 const settlementExp = {
-                    id: Date.now().toString(), desc: `Settlement: ${from} → ${to}`,
+                    id: Date.now().toString(), 
+                    updatedAt: Date.now(),
+                    desc: `Settlement: ${from} → ${to}`,
                     amount: amount, originalAmount: amount, currency: 'INR',
                     payer: from, category: "Settlement", isSettlement: true,
                     split: { [to]: amount }, date: new Date().toISOString()
@@ -731,25 +788,28 @@
             if (pass === "5241") {
                 if(confirm("Permanently delete this transaction?")) {
                     const exp = appData.expenses.find(e => e.id === id);
-                    if(exp) logActivity('DELETE', exp.desc, exp.amount, currentUser.name);
-                    
-                    appData.expenses = appData.expenses.filter(e => e.id !== id);
-                    await saveData();
-                    switchTab(currentTab);
+                    if(exp) {
+                        // Soft Delete Engine
+                        exp.isDeleted = true;
+                        exp.updatedAt = Date.now();
+                        logActivity('DELETE', exp.desc, exp.amount, currentUser.name);
+                        await saveData();
+                        switchTab(currentTab);
+                    }
                 }
             } else { alert("❌ Incorrect password. Deletion aborted."); }
         }
 
-        // --- Expense Details Modal ---
+        // --- Expense Details & Editor ---
         window.openExpenseDetails = function(id) {
             const exp = appData.expenses.find(e => e.id === id);
-            if(!exp) return;
+            if(!exp || exp.isDeleted) return;
 
             const icon = getCategoryIcon(exp.category);
             const dateStr = new Date(exp.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             let payerName = exp.payer === currentUser.name ? "You" : exp.payer;
             
-            // Set up Edit Button Action
+            // Link Edit button to form prepopulation
             document.getElementById('btn-edit-expense').onclick = () => {
                 closeDetailsModal();
                 editingExpenseId = exp.id;
@@ -828,7 +888,7 @@
         });
 
         window.removeTraveler = async function(name) {
-            const involved = appData.expenses.some(e => e.payer === name || Object.keys(e.split).includes(name));
+            const involved = getValidExpenses().some(e => e.payer === name || Object.keys(e.split).includes(name));
             if (involved) return alert(`Cannot remove ${name}. They are already part of existing expenses. Delete those expenses first.`);
             
             if(confirm(`Remove ${name} from the trip?`)) {
@@ -838,7 +898,7 @@
             }
         }
 
-        // --- UI Interactions & Listeners ---
+        // --- UI Listeners & Form Control ---
         function setupEventListeners() {
             document.getElementById('btn-reset').addEventListener('click', () => {
                 const pass = prompt("🔒 Enter admin password to reset trip:");
@@ -860,7 +920,7 @@
             
             document.getElementById('btn-add-expense').addEventListener('click', () => {
                 if(appData.travelers.length < 1) return alert("Please add travelers in the Summary tab first.");
-                editingExpenseId = null; // Clear edit state
+                editingExpenseId = null; 
                 populateExpenseForm();
                 modalExp.classList.remove('hidden'); modalExp.classList.add('modal-enter'); modalExp.classList.remove('modal-exit');
             });
@@ -888,19 +948,16 @@
             const modalNames = document.getElementById('modal-names');
             document.getElementById('btn-close-names').addEventListener('click', () => {
                 modalNames.classList.replace('modal-enter', 'modal-exit');
-                setTimeout(() => {
-                    modalNames.classList.add('hidden');
-                    switchTab('summary'); 
-                }, 300);
+                setTimeout(() => { modalNames.classList.add('hidden'); switchTab('summary'); }, 300);
             });
         }
 
-        // populateExpenseForm handles both NEW expenses and EDITING expenses
+        // Handles populating the form for BOTH New and Edit modes
         function populateExpenseForm(id = null) {
             const title = document.getElementById('modal-expense-title');
             
             if (id) {
-                // EDIT MODE
+                // Edit Mode
                 title.innerText = "Edit Expense";
                 const exp = appData.expenses.find(e => e.id === id);
                 document.getElementById('exp-desc').value = exp.desc;
@@ -929,7 +986,7 @@
                 `).join('');
 
             } else {
-                // NEW MODE
+                // Add Mode
                 title.innerText = "Add Expense";
                 document.getElementById('exp-desc').value = '';
                 document.getElementById('exp-amount').value = '';
@@ -1005,20 +1062,22 @@
             });
 
             if (editingExpenseId) {
-                // UPDATE EXISTING
+                // Update Existing
                 const index = appData.expenses.findIndex(e => e.id === editingExpenseId);
                 if (index !== -1) {
                     appData.expenses[index] = {
                         ...appData.expenses[index],
+                        updatedAt: Date.now(), // Crucial for merge engine
                         desc: desc, amount: finalAmountINR, originalAmount: inputAmount,
                         currency: currency, payer: payer, category: category, split: splitObj
                     };
                     logActivity('EDIT', desc, finalAmountINR, currentUser.name);
                 }
             } else {
-                // INSERT NEW
+                // Create New
                 const newExp = {
                     id: Date.now().toString(),
+                    updatedAt: Date.now(),
                     desc: desc, amount: finalAmountINR, originalAmount: inputAmount,
                     currency: currency, payer: payer, category: category,
                     split: splitObj, date: new Date().toISOString(), isSettlement: false
@@ -1027,7 +1086,6 @@
                 logActivity('ADD', desc, finalAmountINR, currentUser.name);
             }
             
-            // Cleanup state
             editingExpenseId = null; 
             
             const loader = document.getElementById('expense-loader');
