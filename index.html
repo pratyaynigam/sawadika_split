@@ -1,9 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ThaiSplit - Trip Expense Tracker</title>
+
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -34,84 +39,47 @@
             overscroll-behavior-y: none;
             background-color: #0F172A;
         }
-        
-        ::-webkit-scrollbar {
-            width: 0px;
-            background: transparent;
-        }
-
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 24px); }
         .pt-safe { padding-top: env(safe-area-inset-top, 24px); }
-
-        .hit-target { 
-            min-height: 48px; 
-            min-width: 48px; 
-        }
+        .hit-target { min-height: 48px; min-width: 48px; }
 
         .bg-seaside {
-            position: fixed;
-            inset: 0;
-            z-index: -2;
+            position: fixed; inset: 0; z-index: -2;
             background-image: url('https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?q=80&w=1080&auto=format&fit=crop');
-            background-size: cover;
-            background-position: center;
+            background-size: cover; background-position: center;
         }
-        
         .bg-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
+            position: fixed; inset: 0; z-index: -1;
             background: rgba(248, 250, 252, 0.75); 
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
         }
 
         .glass-card {
             background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.6);
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
         }
-
         .glass-header {
             background: rgba(255, 255, 255, 0.90);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.5);
         }
 
-        .split-cb-wrapper input:checked + div {
-            background-color: #008080;
-            color: white;
-            border-color: #008080;
-        }
-        .split-cb-wrapper input:not(:checked) + div {
-            background-color: rgba(255, 255, 255, 0.6);
-            color: #64748b;
-            border-color: #cbd5e1;
-        }
+        .split-cb-wrapper input:checked + div { background-color: #008080; color: white; border-color: #008080; }
+        .split-cb-wrapper input:not(:checked) + div { background-color: rgba(255, 255, 255, 0.6); color: #64748b; border-color: #cbd5e1; }
 
         .modal-enter { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .modal-exit { animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .fade-in { animation: fadeIn 0.3s ease-out forwards; }
         
-        @keyframes slideUp {
-            from { transform: translateY(100%); opacity: 0.5; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes slideDown {
-            from { transform: translateY(0); opacity: 1; }
-            to { transform: translateY(100%); opacity: 0; }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideDown { from { transform: translateY(0); opacity: 1; } to { transform: translateY(100%); opacity: 0; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .tab-active { color: #008080; font-weight: 700; transform: translateY(-2px); }
         .tab-inactive { color: #64748b; font-weight: 500; }
-        
         .btn-press { transition: all 0.2s ease; }
         .btn-press:active { transform: scale(0.95); opacity: 0.8; }
     </style>
@@ -121,39 +89,82 @@
     <div class="bg-seaside"></div>
     <div class="bg-overlay"></div>
 
-    <header class="glass-header px-5 py-4 flex justify-between items-center z-10 shrink-0 shadow-glass-sm rounded-b-3xl">
-        <div>
-            <h1 class="text-2xl font-black text-teal-600 tracking-tight">ThaiSplit 🌴</h1>
-            <p class="text-[11px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Group Tracker</p>
+    <!-- INITIAL SPLASH LOADER -->
+    <div id="splash-screen" class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-slate-50/90 backdrop-blur-xl transition-opacity duration-300">
+        <div class="animate-pulse text-7xl mb-4">🌴</div>
+        <h2 class="text-xl font-black text-teal-600">ThaiSplit</h2>
+        <p class="text-xs font-bold text-slate-500 mt-2 uppercase tracking-widest">Loading Trip Data...</p>
+    </div>
+
+    <!-- CUSTOM LOGIN SCREEN -->
+    <div id="login-screen" class="fixed inset-0 z-50 hidden flex-col items-center justify-center p-6 bg-slate-50/80 backdrop-blur-xl">
+        <div class="glass-card p-8 rounded-[2rem] text-center w-full max-w-sm shadow-glass fade-in">
+            <div class="text-6xl mb-4 transform rotate-12">🥥</div>
+            <h1 class="text-3xl font-black text-teal-600 tracking-tight mb-2">Join Trip</h1>
+            <p class="text-sm text-slate-500 font-medium mb-6">Who is using this phone?</p>
+            
+            <div id="existing-users-section" class="mb-6 hidden">
+                <p class="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-3">Select your name</p>
+                <div id="existing-users-list" class="flex flex-wrap gap-2 justify-center">
+                    <!-- Dynamic user pills injected here -->
+                </div>
+            </div>
+
+            <div class="relative flex items-center mb-4">
+                <div class="flex-grow border-t border-slate-300"></div>
+                <span class="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold uppercase">Or join as new</span>
+                <div class="flex-grow border-t border-slate-300"></div>
+            </div>
+            
+            <div class="flex flex-col gap-3">
+                <input type="text" id="login-name-input" placeholder="Enter your name" class="w-full bg-white/50 border border-slate-200 rounded-xl px-4 py-3 text-center text-lg font-bold text-slate-800 focus:outline-none focus:border-teal-500 shadow-sm hit-target">
+                <button onclick="loginAsNewUser()" class="w-full bg-teal-500 text-white font-bold py-3.5 rounded-xl shadow-md btn-press hit-target text-lg">Enter App</button>
+            </div>
         </div>
-        <button id="btn-reset" class="text-orange-500 text-xs font-bold hit-target px-3 flex items-center justify-center btn-press bg-orange-50 rounded-full border border-orange-100">
-            Reset
+    </div>
+
+    <!-- MAIN APP WRAPPER -->
+    <div id="app-wrapper" class="hidden flex-col h-full w-full">
+        <header class="glass-header px-5 py-4 flex justify-between items-center z-10 shrink-0 shadow-glass-sm rounded-b-3xl">
+            <div>
+                <h1 class="text-2xl font-black text-teal-600 tracking-tight">ThaiSplit 🌴</h1>
+                <p id="user-greeting" class="text-[11px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Welcome</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="logout()" class="text-slate-500 text-[10px] uppercase tracking-wider font-bold hit-target px-3 flex items-center justify-center btn-press bg-slate-100 rounded-full border border-slate-200">
+                    Switch User
+                </button>
+                <button id="btn-reset" class="text-orange-500 text-[10px] uppercase tracking-wider font-bold hit-target px-3 flex items-center justify-center btn-press bg-orange-50 rounded-full border border-orange-100">
+                    Reset
+                </button>
+            </div>
+        </header>
+
+        <main id="main-content" class="flex-1 overflow-y-auto pb-32 px-5 py-6 relative space-y-5 scroll-smooth"></main>
+
+        <button id="btn-add-expense" class="fixed bottom-28 right-6 bg-orange-500 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-lg text-4xl font-light btn-press z-20 focus:outline-none border-4 border-white/40 shadow-[0_8px_30px_rgb(255,111,97,0.4)]">
+            +
         </button>
-    </header>
 
-    <main id="main-content" class="flex-1 overflow-y-auto pb-32 px-5 py-6 relative space-y-5 scroll-smooth"></main>
+        <nav class="glass-header pb-safe shadow-up shrink-0 w-full z-10 fixed bottom-0 rounded-t-3xl border-t border-white/60">
+            <div class="flex justify-around items-center h-20 px-2">
+                <button onclick="switchTab('expenses')" id="tab-expenses" class="flex flex-col items-center justify-center w-full hit-target tab-active transition-all duration-300">
+                    <span class="text-2xl mb-1 drop-shadow-sm">🧾</span>
+                    <span class="text-[10px] uppercase tracking-wider">Expenses</span>
+                </button>
+                <button onclick="switchTab('balances')" id="tab-balances" class="flex flex-col items-center justify-center w-full hit-target tab-inactive transition-all duration-300">
+                    <span class="text-2xl mb-1 drop-shadow-sm">⚖️</span>
+                    <span class="text-[10px] uppercase tracking-wider">Balances</span>
+                </button>
+                <button onclick="switchTab('summary')" id="tab-summary" class="flex flex-col items-center justify-center w-full hit-target tab-inactive transition-all duration-300">
+                    <span class="text-2xl mb-1 drop-shadow-sm">📊</span>
+                    <span class="text-[10px] uppercase tracking-wider">Summary</span>
+                </button>
+            </div>
+        </nav>
+    </div>
 
-    <button id="btn-add-expense" class="fixed bottom-28 right-6 bg-orange-500 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-lg text-4xl font-light btn-press z-20 focus:outline-none border-4 border-white/40 shadow-[0_8px_30px_rgb(255,111,97,0.4)]">
-        +
-    </button>
-
-    <nav class="glass-header pb-safe shadow-up shrink-0 w-full z-10 fixed bottom-0 rounded-t-3xl border-t border-white/60">
-        <div class="flex justify-around items-center h-20 px-2">
-            <button onclick="switchTab('expenses')" id="tab-expenses" class="flex flex-col items-center justify-center w-full hit-target tab-active transition-all duration-300">
-                <span class="text-2xl mb-1 drop-shadow-sm">🧾</span>
-                <span class="text-[10px] uppercase tracking-wider">Expenses</span>
-            </button>
-            <button onclick="switchTab('balances')" id="tab-balances" class="flex flex-col items-center justify-center w-full hit-target tab-inactive transition-all duration-300">
-                <span class="text-2xl mb-1 drop-shadow-sm">⚖️</span>
-                <span class="text-[10px] uppercase tracking-wider">Balances</span>
-            </button>
-            <button onclick="switchTab('summary')" id="tab-summary" class="flex flex-col items-center justify-center w-full hit-target tab-inactive transition-all duration-300">
-                <span class="text-2xl mb-1 drop-shadow-sm">📊</span>
-                <span class="text-[10px] uppercase tracking-wider">Summary</span>
-            </button>
-        </div>
-    </nav>
-
+    <!-- MODALS -->
     <!-- FULL SCREEN MODAL: Add Expense -->
     <div id="modal-expense" class="fixed inset-0 bg-slate-50/95 backdrop-blur-xl z-50 flex flex-col pt-safe hidden transform translate-y-full">
         <div class="flex justify-between items-center px-5 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200/50 shrink-0 relative z-20">
@@ -163,8 +174,6 @@
         </div>
         
         <div class="flex-1 overflow-y-auto px-5 py-6 space-y-6 relative">
-            
-            <!-- Cloud Sync Loader Overlay -->
             <div id="expense-loader" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-30 hidden flex-col items-center justify-center rounded-t-3xl">
                 <div class="animate-spin text-5xl mb-4">🌀</div>
                 <h3 class="text-lg font-black text-slate-800">Saving to Cloud...</h3>
@@ -195,9 +204,7 @@
             <div class="grid grid-cols-2 gap-4">
                 <div class="bg-white p-5 rounded-3xl shadow-glass-sm border border-slate-100 relative">
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Paid By</label>
-                    <select id="exp-payer" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 hit-target appearance-none pr-8">
-                        <!-- Populated via JS -->
-                    </select>
+                    <select id="exp-payer" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 hit-target appearance-none pr-8"></select>
                     <div class="pointer-events-none absolute inset-y-0 right-7 flex items-center px-2 pt-6 text-slate-400">
                         <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                     </div>
@@ -224,9 +231,7 @@
                     <span id="split-calc-display" class="text-sm font-black text-teal-600 bg-teal-50 px-3 py-1 rounded-lg">₹0 / each</span>
                 </div>
                 <p class="text-[11px] text-slate-400 mb-5 font-medium leading-relaxed">Tap to include/exclude. Amount redistributes equally among selected travelers.</p>
-                <div id="split-checkboxes" class="grid grid-cols-2 gap-3">
-                    <!-- Checkboxes populated via JS -->
-                </div>
+                <div id="split-checkboxes" class="grid grid-cols-2 gap-3"></div>
             </div>
         </div>
     </div>
@@ -236,78 +241,90 @@
         <div class="flex justify-between items-center px-5 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200/50 shrink-0">
             <button onclick="closeDetailsModal()" class="text-slate-500 font-bold hit-target flex items-center btn-press text-sm">Close</button>
             <h2 class="text-lg font-bold text-slate-800">Expense Details</h2>
-            <div class="w-12"></div> <!-- Spacer -->
+            <div class="w-12"></div>
         </div>
-        <div id="details-content" class="flex-1 overflow-y-auto px-5 py-6 space-y-6">
-            <!-- Injected via JS -->
-        </div>
+        <div id="details-content" class="flex-1 overflow-y-auto px-5 py-6 space-y-6"></div>
     </div>
 
-    <!-- FULL SCREEN MODAL: Edit Names -->
+    <!-- FULL SCREEN MODAL: Manage Travelers (Dynamic) -->
     <div id="modal-names" class="fixed inset-0 bg-slate-50/95 backdrop-blur-xl z-50 flex flex-col pt-safe hidden transform translate-y-full">
         <div class="flex justify-between items-center px-5 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200/50 shrink-0">
-            <button id="btn-close-names" class="text-slate-500 font-bold hit-target flex items-center btn-press text-sm">Cancel</button>
-            <h2 class="text-lg font-bold text-slate-800">Edit Travelers</h2>
-            <button id="btn-save-names" class="text-teal-600 font-bold hit-target flex items-center btn-press text-sm">Save</button>
+            <button id="btn-close-names" class="text-slate-500 font-bold hit-target flex items-center btn-press text-sm">Done</button>
+            <h2 class="text-lg font-bold text-slate-800">Manage Travelers</h2>
+            <div class="w-12"></div>
         </div>
         <div class="flex-1 overflow-y-auto px-5 py-6">
-            <div class="bg-white p-6 rounded-3xl shadow-glass-sm border border-slate-100">
-                <p class="text-sm text-slate-500 mb-6 font-medium">Update the names of the 8 travelers on this trip. Changes will reflect in past expenses too.</p>
-                <div id="names-inputs" class="space-y-4">
-                    <!-- Inputs populated via JS -->
+            <div class="bg-white p-6 rounded-3xl shadow-glass-sm border border-slate-100 mb-6">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Add Someone</h3>
+                <div class="flex gap-2">
+                    <input type="text" id="new-traveler-name" placeholder="Friend's Name" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:outline-none focus:border-teal-500 hit-target">
+                    <button id="btn-add-traveler" class="bg-teal-500 text-white font-bold px-5 rounded-xl btn-press shadow-md">Add</button>
                 </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-3xl shadow-glass-sm border border-slate-100">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Current Group</h3>
+                <div id="names-list" class="space-y-3"></div>
             </div>
         </div>
     </div>
 
     <script>
+        // ==========================================
+        // ⚠️ CONFIGURATION: ADD YOUR GOOGLE SCRIPT URL HERE
+        // ==========================================
+        const GOOGLE_SCRIPT_URL = 'YOUR_GOOGLE_SCRIPT_URL_HERE'; 
+        
         // --- Data Architecture & Constants ---
-        const DEFAULT_TRAVELERS = ["Pratyay", "Aarushi", "Anindya", "Rwitikka", "Shiva", "Mridu", "Kotkar", "Swapnil"];
-        const STORAGE_KEY = 'thaiTripBackup_v4';
+        const STORAGE_KEY = 'thaiTripData_v6';
+        const USER_KEY = 'thaiTripCurrentUser';
         const THB_TO_INR_RATE = 2.92;
         
-        // Google Script API Endpoint
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVUwMueDK7RKkU953JiegITUJs-zYrLs-RfM0uZJFGjv3a4bdEt9ikK61V1E7rwTBAJg/exec';
-        
-        let appData = {
-            travelers: [...DEFAULT_TRAVELERS],
-            expenses: [] 
-        };
-
+        let appData = { travelers: [], expenses: [] };
         let currentTab = 'expenses';
         let modalAmount = 0;
+        let currentUser = null; 
 
-        // --- Core Initialization ---
-        async function init() {
-            const main = document.getElementById('main-content');
-            main.innerHTML = `
-                <div class="h-full flex flex-col items-center justify-center text-center mt-32 fade-in">
-                    <div class="animate-pulse text-6xl mb-4">☁️</div>
-                    <h2 class="text-lg font-bold text-slate-700">Syncing with Cloud...</h2>
-                </div>
-            `;
-            
+        // --- Init & Cloud Data Sync ---
+        window.onload = async function () {
+            // 1. Fetch Cloud Data First (so we know existing users)
             await loadData();
-            setupEventListeners();
-            switchTab('expenses');
-        }
+            
+            // 2. Hide splash screen
+            const splash = document.getElementById('splash-screen');
+            splash.style.opacity = '0';
+            setTimeout(() => splash.classList.add('hidden'), 300);
+
+            // 3. Check if user is already logged in on this device
+            const savedUser = localStorage.getItem(USER_KEY);
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                // Ensure they still exist in the appData (in case trip was reset)
+                if (!appData.travelers.includes(currentUser.name)) {
+                    appData.travelers.push(currentUser.name);
+                    await saveData();
+                }
+                startMainApp();
+            } else {
+                showLoginScreen();
+            }
+        };
 
         async function loadData() {
             try {
                 const response = await fetch(GOOGLE_SCRIPT_URL);
                 const text = await response.text();
-                
                 let saved = null;
                 if (text) saved = JSON.parse(text);
                 
-                if (saved && saved.travelers && saved.travelers.length === 8 && Array.isArray(saved.expenses)) {
+                if (saved && Array.isArray(saved.travelers) && Array.isArray(saved.expenses)) {
                     appData = saved;
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
                 } else {
                     loadFallback();
                 }
             } catch (e) {
-                console.error("Cloud fetch failed, reverting to local backup.", e);
+                console.error("Cloud fetch failed, using local.", e);
                 loadFallback();
             }
         }
@@ -316,13 +333,10 @@
             const local = localStorage.getItem(STORAGE_KEY);
             if (local) {
                 const parsed = JSON.parse(local);
-                if (parsed && parsed.travelers) {
-                    appData = parsed;
-                }
+                if (parsed && Array.isArray(parsed.travelers)) appData = parsed;
             }
         }
 
-        // Push data to Google Sheets (Returns a Promise for awaiting loaders)
         async function saveData() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
             try {
@@ -331,46 +345,104 @@
                     body: JSON.stringify(appData),
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
                 });
-            } catch (error) {
-                console.error("Failed to initiate cloud sync:", error);
-                alert("Cloud sync failed. Saved locally.");
+            } catch (error) { console.error("Cloud sync failed. Saved locally."); }
+        }
+
+        // --- Soft Login Flow ---
+        function showLoginScreen() {
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('login-screen').classList.add('flex');
+            
+            // Populate existing users if any
+            if (appData.travelers.length > 0) {
+                document.getElementById('existing-users-section').classList.remove('hidden');
+                const list = document.getElementById('existing-users-list');
+                list.innerHTML = appData.travelers.map(name => `
+                    <button onclick="loginAsExisting('${name}')" class="bg-white border border-slate-200 text-slate-700 font-bold py-2 px-4 rounded-full shadow-sm btn-press text-sm">
+                        ${name}
+                    </button>
+                `).join('');
             }
         }
 
-        // --- Navigation Handling ---
+        function formatName(name) {
+            return name.trim().charAt(0).toUpperCase() + name.trim().slice(1);
+        }
+
+        window.loginAsExisting = async function(name) {
+            currentUser = { name: name };
+            localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+            startMainApp();
+        }
+
+        window.loginAsNewUser = async function() {
+            let inputName = document.getElementById('login-name-input').value;
+            if(!inputName.trim()) return alert("Please enter your name");
+            
+            inputName = formatName(inputName);
+            
+            // Check if name already exists (case insensitive)
+            const exists = appData.travelers.find(t => t.toLowerCase() === inputName.toLowerCase());
+            if (exists) {
+                currentUser = { name: exists };
+            } else {
+                currentUser = { name: inputName };
+                appData.travelers.push(inputName);
+                await saveData();
+            }
+            
+            localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+            startMainApp();
+        }
+
+        window.logout = function() {
+            if(confirm("Switch user profile on this device?")) {
+                localStorage.removeItem(USER_KEY);
+                location.reload();
+            }
+        }
+
+        function startMainApp() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('flex');
+            
+            document.getElementById('app-wrapper').classList.remove('hidden');
+            document.getElementById('app-wrapper').classList.add('flex');
+            
+            document.getElementById('user-greeting').innerText = `Hi, ${currentUser.name}`;
+
+            setupEventListeners();
+            switchTab('expenses');
+        }
+
+        // --- Navigation ---
         function switchTab(tab) {
             currentTab = tab;
-            
             ['expenses', 'balances', 'summary'].forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
-                if (t === tab) {
-                    el.classList.replace('tab-inactive', 'tab-active');
-                } else {
-                    el.classList.replace('tab-active', 'tab-inactive');
-                }
+                if (t === tab) el.classList.replace('tab-inactive', 'tab-active');
+                else el.classList.replace('tab-active', 'tab-inactive');
             });
 
             document.getElementById('btn-add-expense').style.display = (tab === 'expenses') ? 'flex' : 'none';
 
             const main = document.getElementById('main-content');
-            main.innerHTML = '';
-            main.scrollTop = 0;
+            main.innerHTML = ''; main.scrollTop = 0;
 
             if (tab === 'expenses') renderExpenses(main);
             if (tab === 'balances') renderBalances(main);
             if (tab === 'summary') renderSummary(main);
         }
 
-        // --- View Renderers ---
+        // --- Renderers ---
         function renderExpenses(container) {
             if (appData.expenses.length === 0) {
                 container.innerHTML = `
                     <div class="h-full flex flex-col items-center justify-center text-center mt-24 fade-in">
                         <div class="text-7xl mb-6 bg-white/60 backdrop-blur-sm rounded-[2rem] p-6 shadow-glass-sm border border-white/50 inline-block transform -rotate-6">🥥</div>
                         <h2 class="text-2xl font-black text-slate-800 mb-3">No expenses yet</h2>
-                        <p class="text-sm px-10 text-slate-600 font-medium leading-relaxed">Tap the + button below to add your first transaction.</p>
-                    </div>
-                `;
+                        <p class="text-sm px-10 text-slate-600 font-medium leading-relaxed">Tap the + button below to add a transaction.</p>
+                    </div>`;
                 return;
             }
 
@@ -381,12 +453,15 @@
             sorted.forEach((exp, index) => {
                 const isSettlement = exp.isSettlement;
                 const icon = getCategoryIcon(exp.category);
-                const splitText = isSettlement ? `Paid to ${Object.keys(exp.split)[0]}` : `Paid by ${exp.payer}`;
+                
+                let payerText = exp.payer;
+                if (payerText === currentUser.name) payerText = "You";
+                const splitText = isSettlement ? `Paid to ${Object.keys(exp.split)[0]}` : `Paid by ${payerText}`;
+                
                 const dateStr = new Date(exp.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
                 const delay = Math.min(index * 0.05, 0.5);
 
                 const card = document.createElement('div');
-                // Card is clickable to open details
                 card.className = `glass-card p-5 rounded-3xl flex justify-between items-center fade-in cursor-pointer hover:bg-slate-50 transition-colors`;
                 card.style.animationDelay = `${delay}s`;
                 card.style.opacity = '0'; 
@@ -416,6 +491,11 @@
         }
 
         function renderBalances(container) {
+            if (appData.travelers.length < 2) {
+                container.innerHTML = `<div class="text-center mt-28"><h2 class="text-xl font-bold text-slate-800">Add friends in Summary tab first.</h2></div>`;
+                return;
+            }
+
             const { balances, transactions } = calculateSettlements();
 
             if (appData.expenses.length === 0) {
@@ -424,13 +504,11 @@
                         <div class="text-7xl mb-6 bg-white/60 backdrop-blur-sm rounded-[2rem] p-6 shadow-glass-sm border border-white/50 inline-block transform rotate-6">⚖️</div>
                         <h2 class="text-2xl font-black text-slate-800 mb-2">No Debts</h2>
                         <p class="text-sm text-slate-600 font-medium">Add expenses to see who owes whom.</p>
-                    </div>
-                `;
+                    </div>`;
                 return;
             }
 
-            let html = `<div class="fade-in">
-                <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 ml-2">Simplest Repayments</h2>`;
+            let html = `<div class="fade-in"><h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 ml-2">Simplest Repayments</h2>`;
             
             if (transactions.length === 0) {
                 html += `
@@ -438,26 +516,27 @@
                         <div class="text-5xl mb-4">🎉</div>
                         <h3 class="font-black text-slate-800 text-xl">All Settled Up!</h3>
                         <p class="text-slate-500 text-sm mt-2 font-medium">Nobody owes anything.</p>
-                    </div>
-                `;
+                    </div>`;
             } else {
                 html += `<div class="space-y-4 mb-8">`;
                 transactions.forEach((tx) => {
+                    let fromName = tx.from === currentUser.name ? "You" : tx.from;
+                    let toName = tx.to === currentUser.name ? "You" : tx.to;
+                    
                     html += `
                         <div class="glass-card p-5 rounded-3xl flex justify-between items-center shadow-glass-sm">
                             <div class="flex-1 pr-4">
                                 <p class="text-sm text-slate-600 font-medium leading-tight">
-                                    <span class="font-black text-slate-800 text-base">${tx.from}</span> <br/>
+                                    <span class="font-black ${tx.from === currentUser.name ? 'text-orange-500' : 'text-slate-800'} text-base">${fromName}</span> <br/>
                                     <span class="text-xs text-slate-400 uppercase tracking-wider font-bold">pays</span> 
-                                    <span class="font-black text-slate-800 text-base">${tx.to}</span>
+                                    <span class="font-black ${tx.to === currentUser.name ? 'text-teal-600' : 'text-slate-800'} text-base">${toName}</span>
                                 </p>
                                 <p class="text-2xl font-black text-orange-500 mt-2">₹${tx.amount.toFixed(2)}</p>
                             </div>
                             <button onclick="settleUp('${tx.from}', '${tx.to}', ${tx.amount})" class="bg-teal-500 text-white text-xs font-bold py-3.5 px-6 rounded-2xl shadow-md hover:bg-teal-600 btn-press whitespace-nowrap shadow-[0_4px_14px_0_rgb(0,128,128,0.39)]">
                                 Settle up
                             </button>
-                        </div>
-                    `;
+                        </div>`;
                 });
                 html += `</div>`;
             }
@@ -470,13 +549,13 @@
                 let colorClass = bal > 0.01 ? 'text-teal-600' : (bal < -0.01 ? 'text-orange-500' : 'text-slate-500');
                 let prefix = bal > 0.01 ? '+' : '';
                 let bgClass = bal > 0.01 ? 'bg-teal-50/70 border-teal-100' : (bal < -0.01 ? 'bg-orange-50/70 border-orange-100' : 'glass-card border-slate-100');
+                let displayName = person === currentUser.name ? "You" : person;
 
                 html += `
-                    <div class="${bgClass} p-4 rounded-3xl border flex flex-col justify-center items-center text-center shadow-sm backdrop-blur-md">
-                        <span class="text-[11px] font-bold text-slate-700 mb-1 uppercase tracking-wider">${person}</span>
+                    <div class="${bgClass} p-4 rounded-3xl border flex flex-col justify-center items-center text-center shadow-sm backdrop-blur-md overflow-hidden">
+                        <span class="text-[10px] font-bold text-slate-700 mb-1 uppercase tracking-wider truncate w-full px-2">${displayName}</span>
                         <span class="text-lg font-black ${colorClass}">${prefix}₹${bal.toFixed(0)}</span>
-                    </div>
-                `;
+                    </div>`;
             });
             html += `</div></div>`;
 
@@ -491,8 +570,7 @@
                     <div class="absolute top-0 right-0 opacity-10 text-9xl -mt-8 -mr-8 transform rotate-12 pointer-events-none">🌴</div>
                     <p class="text-teal-100 text-[10px] font-bold uppercase tracking-widest mb-2 relative z-10">Total Trip Cost</p>
                     <h2 class="text-5xl font-black mb-1 relative z-10 tracking-tight">₹${total.toFixed(0)}</h2>
-                </div>
-            `;
+                </div>`;
 
             let catTotals = {};
             appData.expenses.filter(e => !e.isSettlement).forEach(e => {
@@ -503,8 +581,7 @@
                 html += `
                 <div class="glass-card p-6 rounded-[2rem] shadow-glass-sm mb-6">
                     <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-5">Spending by Category</h3>
-                    <div class="space-y-5">
-                `;
+                    <div class="space-y-5">`;
                 
                 Object.entries(catTotals).sort((a,b) => b[1] - a[1]).forEach(([cat, amt]) => {
                     const pct = ((amt / total) * 100).toFixed(0);
@@ -520,20 +597,18 @@
                                     <div class="bg-orange-400 h-full rounded-full transition-all duration-700 ease-out" style="width: ${pct}%"></div>
                                 </div>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 });
                 html += `</div></div>`;
             }
 
             html += `
-                <button id="btn-open-names" class="w-full glass-card border border-white/60 text-slate-700 font-bold py-5 rounded-[2rem] shadow-glass-sm hit-target flex justify-center items-center gap-3 btn-press mb-4">
+                <button onclick="openManageTravelersModal()" class="w-full glass-card border border-white/60 text-slate-700 font-bold py-5 rounded-[2rem] shadow-glass-sm hit-target flex justify-center items-center gap-3 btn-press mb-4">
                     <span class="text-xl">👥</span> Manage Travelers
                 </button>
             </div>`;
 
             container.innerHTML = html;
-            document.getElementById('btn-open-names').addEventListener('click', openNamesModal);
         }
 
         // --- Core Math: Settlement Engine ---
@@ -542,51 +617,31 @@
             appData.travelers.forEach(t => balances[t] = 0);
 
             appData.expenses.forEach(ex => {
-                if (balances[ex.payer] !== undefined) {
-                    balances[ex.payer] += ex.amount; 
-                }
+                if (balances[ex.payer] !== undefined) balances[ex.payer] += ex.amount; 
                 for (let person in ex.split) {
-                    if (balances[person] !== undefined) {
-                        balances[person] -= ex.split[person]; 
-                    }
+                    if (balances[person] !== undefined) balances[person] -= ex.split[person]; 
                 }
             });
 
-            for (let t in balances) {
-                balances[t] = Math.round(balances[t] * 100) / 100;
-            }
+            for (let t in balances) balances[t] = Math.round(balances[t] * 100) / 100;
 
-            let debtors = [];
-            let creditors = [];
+            let debtors = []; let creditors = [];
             
             for (let person in balances) {
-                if (balances[person] < -0.01) {
-                    debtors.push({ person, amount: -balances[person] });
-                } else if (balances[person] > 0.01) {
-                    creditors.push({ person, amount: balances[person] });
-                }
+                if (balances[person] < -0.01) debtors.push({ person, amount: -balances[person] });
+                else if (balances[person] > 0.01) creditors.push({ person, amount: balances[person] });
             }
 
-            debtors.sort((a, b) => b.amount - a.amount);
-            creditors.sort((a, b) => b.amount - a.amount);
+            debtors.sort((a, b) => b.amount - a.amount); creditors.sort((a, b) => b.amount - a.amount);
 
-            let transactions = [];
-            let i = 0, j = 0;
+            let transactions = []; let i = 0, j = 0;
 
             while (i < debtors.length && j < creditors.length) {
-                let debt = debtors[i].amount;
-                let credit = creditors[j].amount;
+                let debt = debtors[i].amount; let credit = creditors[j].amount;
                 let amount = Math.min(debt, credit);
                 
                 amount = Math.round(amount * 100) / 100; 
-
-                if (amount > 0) {
-                    transactions.push({
-                        from: debtors[i].person,
-                        to: creditors[j].person,
-                        amount: amount
-                    });
-                }
+                if (amount > 0) transactions.push({ from: debtors[i].person, to: creditors[j].person, amount: amount });
 
                 debtors[i].amount = Math.round((debtors[i].amount - amount) * 100) / 100;
                 creditors[j].amount = Math.round((creditors[j].amount - amount) * 100) / 100;
@@ -594,55 +649,48 @@
                 if (debtors[i].amount < 0.01) i++;
                 if (creditors[j].amount < 0.01) j++;
             }
-
             return { balances, transactions };
         }
 
         async function settleUp(from, to, amount) {
-            if(confirm(`Confirm: ${from} paid ₹${amount.toFixed(0)} to ${to}?`)) {
+            let fromName = from === currentUser.name ? "You" : from;
+            let toName = to === currentUser.name ? "You" : to;
+            
+            if(confirm(`Confirm: ${fromName} paid ₹${amount.toFixed(0)} to ${toName}?`)) {
                 const settlementExp = {
-                    id: Date.now().toString(),
-                    desc: `Settlement: ${from} → ${to}`,
-                    amount: amount,
-                    originalAmount: amount,
-                    currency: 'INR',
-                    payer: from,
-                    category: "Settlement",
-                    isSettlement: true,
-                    split: { [to]: amount }, 
-                    date: new Date().toISOString()
+                    id: Date.now().toString(), desc: `Settlement: ${from} → ${to}`,
+                    amount: amount, originalAmount: amount, currency: 'INR',
+                    payer: from, category: "Settlement", isSettlement: true,
+                    split: { [to]: amount }, date: new Date().toISOString()
                 };
-
                 appData.expenses.push(settlementExp);
-                await saveData(); // Quiet sync
+                await saveData(); 
                 renderBalances(document.getElementById('main-content'));
             }
         }
 
         async function deleteExpense(id, event) {
-            if (event) event.stopPropagation(); // Prevent opening detail modal
-            
+            if (event) event.stopPropagation();
             const pass = prompt("🔒 Enter password to delete expense:");
             if (pass === null) return;
-            
             if (pass === "5241") {
                 if(confirm("Permanently delete this transaction?")) {
                     appData.expenses = appData.expenses.filter(e => e.id !== id);
                     await saveData();
                     switchTab(currentTab);
                 }
-            } else {
-                alert("❌ Incorrect password. Deletion aborted.");
-            }
+            } else { alert("❌ Incorrect password. Deletion aborted."); }
         }
 
-        // --- Detailed Expense View Modal ---
+        // --- Expense Details Modal ---
         window.openExpenseDetails = function(id) {
             const exp = appData.expenses.find(e => e.id === id);
             if(!exp) return;
 
             const icon = getCategoryIcon(exp.category);
             const dateStr = new Date(exp.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            let payerName = exp.payer === currentUser.name ? "You" : exp.payer;
             
             let html = `
                 <div class="bg-white p-6 rounded-3xl shadow-glass-sm text-center border border-slate-100">
@@ -651,31 +699,26 @@
                     <p class="text-4xl font-black text-teal-600 mt-2">₹${exp.amount.toFixed(2)}</p>
                     ${exp.currency === 'THB' ? `<p class="text-xs text-slate-400 font-bold mt-1 tracking-wider uppercase">Original: ฿${exp.originalAmount.toFixed(2)}</p>` : ''}
                     <p class="text-sm text-slate-500 mt-4 bg-slate-50 inline-block px-4 py-2 rounded-xl border border-slate-100">
-                        Paid by <span class="font-black text-slate-700">${exp.payer}</span><br>
+                        Paid by <span class="font-black text-slate-700">${payerName}</span><br>
                         <span class="text-xs">${dateStr}</span>
                     </p>
                 </div>
-                
                 <h4 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 ml-2 mt-8">Split Breakdown</h4>
                 <div class="space-y-3">
             `;
-
             for(let person in exp.split) {
+                let displayName = person === currentUser.name ? "You" : person;
                 html += `
                     <div class="glass-card p-4 rounded-2xl flex justify-between items-center shadow-glass-sm">
-                        <span class="font-bold text-slate-700">${person}</span>
+                        <span class="font-bold text-slate-700">${displayName}</span>
                         <span class="font-black text-slate-800">₹${exp.split[person].toFixed(2)}</span>
-                    </div>
-                `;
+                    </div>`;
             }
             html += `</div>`;
-            
             document.getElementById('details-content').innerHTML = html;
             
             const modal = document.getElementById('modal-details');
-            modal.classList.remove('hidden');
-            modal.classList.remove('modal-exit');
-            modal.classList.add('modal-enter');
+            modal.classList.remove('hidden'); modal.classList.remove('modal-exit'); modal.classList.add('modal-enter');
         }
 
         window.closeDetailsModal = function() {
@@ -684,7 +727,50 @@
             setTimeout(() => modal.classList.add('hidden'), 300);
         }
 
-        // --- UI Interactions & Event Listeners ---
+        // --- Manage Travelers Modal ---
+        window.openManageTravelersModal = function() {
+            renderTravelersList();
+            const modal = document.getElementById('modal-names');
+            modal.classList.remove('hidden'); modal.classList.remove('modal-exit'); modal.classList.add('modal-enter');
+        }
+
+        function renderTravelersList() {
+            const list = document.getElementById('names-list');
+            list.innerHTML = appData.travelers.map((t, i) => `
+                <div class="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                    <span class="font-bold text-slate-700 text-sm pl-2">${t}</span>
+                    ${t !== currentUser.name ? `<button onclick="removeTraveler('${t}')" class="text-[10px] text-orange-500 font-bold px-2 py-1 uppercase tracking-widest hit-target">Remove</button>` : `<span class="text-[10px] text-teal-600 font-bold uppercase tracking-widest pr-2">(You)</span>`}
+                </div>
+            `).join('');
+            if(appData.travelers.length === 0) list.innerHTML = `<p class="text-sm text-slate-400">No travelers yet.</p>`;
+        }
+
+        document.getElementById('btn-add-traveler').addEventListener('click', async () => {
+            const input = document.getElementById('new-traveler-name');
+            const name = formatName(input.value);
+            if(!name) return;
+            
+            const exists = appData.travelers.find(t => t.toLowerCase() === name.toLowerCase());
+            if(exists) return alert("Name already exists.");
+            
+            appData.travelers.push(name);
+            input.value = '';
+            renderTravelersList();
+            await saveData();
+        });
+
+        window.removeTraveler = async function(name) {
+            const involved = appData.expenses.some(e => e.payer === name || Object.keys(e.split).includes(name));
+            if (involved) return alert(`Cannot remove ${name}. They are already part of existing expenses. Delete those expenses first.`);
+            
+            if(confirm(`Remove ${name} from the trip?`)) {
+                appData.travelers = appData.travelers.filter(t => t !== name);
+                renderTravelersList();
+                await saveData();
+            }
+        }
+
+        // --- UI Interactions & Listeners ---
         function setupEventListeners() {
             document.getElementById('btn-reset').addEventListener('click', () => {
                 const pass = prompt("🔒 Enter admin password to reset trip:");
@@ -692,14 +778,12 @@
                 
                 if (pass === "Prat@112890") {
                     if(confirm("⚠️ DANGER: This will permanently delete all expenses and reset the trip on the cloud too. Are you absolutely sure?")) {
-                        appData = { travelers: [...DEFAULT_TRAVELERS], expenses: [] };
+                        appData = { travelers: [currentUser.name], expenses: [] };
                         saveData();
                         switchTab('expenses');
                         alert("Trip has been successfully reset.");
                     }
-                } else {
-                    alert("❌ Incorrect password. Reset aborted.");
-                }
+                } else { alert("❌ Incorrect password. Reset aborted."); }
             });
 
             const modalExp = document.getElementById('modal-expense');
@@ -707,10 +791,9 @@
             const curSelect = document.getElementById('exp-currency');
             
             document.getElementById('btn-add-expense').addEventListener('click', () => {
+                if(appData.travelers.length < 1) return alert("Please add travelers in the Summary tab first.");
                 populateExpenseForm();
-                modalExp.classList.remove('hidden');
-                modalExp.classList.add('modal-enter');
-                modalExp.classList.remove('modal-exit');
+                modalExp.classList.remove('hidden'); modalExp.classList.add('modal-enter'); modalExp.classList.remove('modal-exit');
             });
 
             document.getElementById('btn-close-expense').addEventListener('click', () => {
@@ -718,20 +801,15 @@
                 setTimeout(() => modalExp.classList.add('hidden'), 300);
             });
 
-            amtInput.addEventListener('input', (e) => {
-                modalAmount = parseFloat(e.target.value) || 0;
-                updateSplitCalculations();
-            });
+            amtInput.addEventListener('input', (e) => { modalAmount = parseFloat(e.target.value) || 0; updateSplitCalculations(); });
 
             curSelect.addEventListener('change', (e) => {
                 const sym = document.getElementById('currency-symbol');
                 const hint = document.getElementById('conversion-hint');
                 if (e.target.value === 'THB') {
-                    sym.innerText = '฿';
-                    hint.classList.remove('hidden');
+                    sym.innerText = '฿'; hint.classList.remove('hidden');
                 } else {
-                    sym.innerText = '₹';
-                    hint.classList.add('hidden');
+                    sym.innerText = '₹'; hint.classList.add('hidden');
                 }
                 updateSplitCalculations();
             });
@@ -741,9 +819,11 @@
             const modalNames = document.getElementById('modal-names');
             document.getElementById('btn-close-names').addEventListener('click', () => {
                 modalNames.classList.replace('modal-enter', 'modal-exit');
-                setTimeout(() => modalNames.classList.add('hidden'), 300);
+                setTimeout(() => {
+                    modalNames.classList.add('hidden');
+                    switchTab('summary'); 
+                }, 300);
             });
-            document.getElementById('btn-save-names').addEventListener('click', saveNames);
         }
 
         function populateExpenseForm() {
@@ -752,18 +832,17 @@
             document.getElementById('exp-currency').value = 'INR';
             document.getElementById('currency-symbol').innerText = '₹';
             document.getElementById('conversion-hint').classList.add('hidden');
-            modalAmount = 0;
-            document.getElementById('exp-category').value = 'Food';
+            modalAmount = 0; document.getElementById('exp-category').value = 'Food';
 
             const payerSelect = document.getElementById('exp-payer');
-            payerSelect.innerHTML = appData.travelers.map(t => `<option value="${t}">${t}</option>`).join('');
+            payerSelect.innerHTML = appData.travelers.map(t => `<option value="${t}" ${t === currentUser.name ? 'selected' : ''}>${t === currentUser.name ? 'You' : t}</option>`).join('');
 
             const cbContainer = document.getElementById('split-checkboxes');
             cbContainer.innerHTML = appData.travelers.map(t => `
                 <label class="split-cb-wrapper relative block hit-target cursor-pointer">
                     <input type="checkbox" value="${t}" class="split-cb peer sr-only" checked onchange="updateSplitCalculations()">
-                    <div class="w-full h-full p-3 rounded-2xl border-2 text-center text-sm font-bold transition-colors shadow-sm flex items-center justify-center">
-                        ${t}
+                    <div class="w-full h-full p-3 rounded-2xl border-2 text-center text-sm font-bold transition-colors shadow-sm flex items-center justify-center truncate px-2">
+                        ${t === currentUser.name ? 'You' : t}
                     </div>
                 </label>
             `).join('');
@@ -778,7 +857,6 @@
             const currency = document.getElementById('exp-currency').value;
             const hint = document.getElementById('conversion-hint');
             
-            // Convert to INR live if THB
             let amountInINR = modalAmount;
             if (currency === 'THB') {
                 amountInINR = modalAmount * THB_TO_INR_RATE;
@@ -787,13 +865,11 @@
 
             if (count === 0) {
                 display.innerText = "₹0 / each";
-                display.classList.replace('text-teal-600', 'text-orange-500');
-                display.classList.replace('bg-teal-50', 'bg-orange-50');
+                display.classList.replace('text-teal-600', 'text-orange-500'); display.classList.replace('bg-teal-50', 'bg-orange-50');
             } else {
                 const perPerson = amountInINR / count;
                 display.innerText = `₹${perPerson.toFixed(0)} / each`;
-                display.classList.replace('text-orange-500', 'text-teal-600');
-                display.classList.replace('bg-orange-50', 'bg-teal-50');
+                display.classList.replace('text-orange-500', 'text-teal-600'); display.classList.replace('bg-orange-50', 'bg-teal-50');
             }
         };
 
@@ -809,11 +885,8 @@
             if (!inputAmount || inputAmount <= 0) return alert("Please enter a valid amount.");
             if (checkboxes.length === 0) return alert("Select at least one person to split with.");
 
-            // Standardize amount to INR for saving the core calculations
             let finalAmountINR = inputAmount;
-            if (currency === 'THB') {
-                finalAmountINR = inputAmount * THB_TO_INR_RATE;
-            }
+            if (currency === 'THB') finalAmountINR = inputAmount * THB_TO_INR_RATE;
 
             let splitObj = {};
             const baseSplit = Math.round((finalAmountINR / checkboxes.length) * 100) / 100;
@@ -823,101 +896,35 @@
                 if (idx === checkboxes.length - 1) {
                     splitObj[cb.value] = Math.round((finalAmountINR - totalAssigned) * 100) / 100;
                 } else {
-                    splitObj[cb.value] = baseSplit;
-                    totalAssigned += baseSplit;
+                    splitObj[cb.value] = baseSplit; totalAssigned += baseSplit;
                 }
             });
 
             const newExp = {
                 id: Date.now().toString(),
-                desc: desc, 
-                amount: finalAmountINR, 
-                originalAmount: inputAmount,
-                currency: currency,
-                payer: payer, 
-                category: category,
-                split: splitObj,
-                date: new Date().toISOString(),
-                isSettlement: false
+                desc: desc, amount: finalAmountINR, originalAmount: inputAmount,
+                currency: currency, payer: payer, category: category,
+                split: splitObj, date: new Date().toISOString(), isSettlement: false
             };
 
             appData.expenses.push(newExp);
             
-            // SHOW LOADER
             const loader = document.getElementById('expense-loader');
-            loader.classList.remove('hidden');
-            loader.classList.add('flex');
+            loader.classList.remove('hidden'); loader.classList.add('flex');
 
-            // Wait for Google Sheets Sync
             await saveData();
             
-            // HIDE LOADER
-            loader.classList.add('hidden');
-            loader.classList.remove('flex');
+            loader.classList.add('hidden'); loader.classList.remove('flex');
             
-            // CLOSE MODAL
             const modal = document.getElementById('modal-expense');
             modal.classList.replace('modal-enter', 'modal-exit');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                switchTab('expenses');
-            }, 300);
-        }
-        
-        function openNamesModal() {
-            const modal = document.getElementById('modal-names');
-            const container = document.getElementById('names-inputs');
-            
-            container.innerHTML = appData.travelers.map((t, i) => `
-                <div class="flex items-center space-x-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
-                    <span class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 text-xs font-black shrink-0">${i+1}</span>
-                    <input type="text" id="name-input-${i}" value="${t}" class="flex-1 bg-transparent py-2 pr-4 text-base font-bold text-slate-800 focus:outline-none hit-target placeholder-slate-400" placeholder="Name">
-                </div>
-            `).join('');
-
-            modal.classList.remove('hidden');
-            modal.classList.add('modal-enter');
-            modal.classList.remove('modal-exit');
-        }
-
-        async function saveNames() {
-            let newNames = [];
-            for (let i = 0; i < 8; i++) {
-                let name = document.getElementById(`name-input-${i}`).value.trim();
-                if (!name) name = `Traveler ${i+1}`;
-                if (newNames.includes(name)) name = name + ` ${i+1}`; 
-                newNames.push(name);
-            }
-
-            let nameMap = {};
-            appData.travelers.forEach((oldName, idx) => { nameMap[oldName] = newNames[idx]; });
-
-            appData.expenses.forEach(ex => {
-                if (nameMap[ex.payer]) ex.payer = nameMap[ex.payer];
-                let newSplit = {};
-                for (let oldPerson in ex.split) {
-                    if (nameMap[oldPerson]) newSplit[nameMap[oldPerson]] = ex.split[oldPerson];
-                }
-                ex.split = newSplit;
-            });
-
-            appData.travelers = newNames;
-            await saveData(); // Quiet sync
-
-            const modal = document.getElementById('modal-names');
-            modal.classList.replace('modal-enter', 'modal-exit');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                switchTab('summary');
-            }, 300);
+            setTimeout(() => { modal.classList.add('hidden'); switchTab('expenses'); }, 300);
         }
 
         function getCategoryIcon(cat) {
             const icons = { 'Food': '🍔', 'Transport': '🚕', 'Massage': '💆', 'Hotel': '🏨', 'Activities': '🏄', 'Misc': '🛍️', 'Settlement': '🤝' };
             return icons[cat] || '🏝️';
         }
-
-        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
