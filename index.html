@@ -71,6 +71,10 @@
         .split-cb-wrapper input:checked + div { background-color: #008080; color: white; border-color: #008080; }
         .split-cb-wrapper input:not(:checked) + div { background-color: rgba(255, 255, 255, 0.6); color: #64748b; border-color: #cbd5e1; }
 
+        /* Exact Mode Input Spinners Hider */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
         .modal-enter { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .modal-exit { animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .fade-in { animation: fadeIn 0.3s ease-out forwards; }
@@ -106,9 +110,7 @@
             
             <div id="existing-users-section" class="mb-6 hidden">
                 <p class="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-3">Select your name</p>
-                <div id="existing-users-list" class="flex flex-wrap gap-2 justify-center">
-                    <!-- Dynamic user pills injected here -->
-                </div>
+                <div id="existing-users-list" class="flex flex-wrap gap-2 justify-center"></div>
             </div>
 
             <div class="relative flex items-center mb-4">
@@ -128,9 +130,9 @@
     <div id="app-wrapper" class="hidden flex-col h-full w-full">
         <header class="glass-header px-5 py-4 flex justify-between items-center z-10 shrink-0 shadow-glass-sm rounded-b-3xl">
             <div>
-                <!-- V1.5 Version Tag Added Here -->
+                <!-- V1.6 Version Tag Added Here -->
                 <h1 class="text-2xl font-black text-teal-600 tracking-tight flex items-baseline">
-                    ThaiSplit 🌴 <span class="text-[10px] text-slate-400 font-bold ml-1.5 tracking-normal uppercase">V1.5</span>
+                    ThaiSplit 🌴 <span class="text-[10px] text-slate-400 font-bold ml-1.5 tracking-normal uppercase">V1.6</span>
                 </h1>
                 <p id="user-greeting" class="text-[11px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Welcome</p>
             </div>
@@ -230,13 +232,33 @@
                 </div>
             </div>
 
+            <!-- Enhanced Split Section -->
             <div class="bg-white p-6 rounded-3xl shadow-glass-sm border border-slate-100 pb-8">
+                <!-- Split Type Toggle -->
+                <div class="flex justify-between items-center mb-4">
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Split Type</label>
+                    <div class="flex bg-slate-100 rounded-lg p-1">
+                        <button id="btn-split-equal" type="button" class="px-4 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-teal-600 transition-all">Equal</button>
+                        <button id="btn-split-exact" type="button" class="px-4 py-1.5 text-xs font-bold rounded-md text-slate-500 transition-all hover:bg-slate-200/50">Exact</button>
+                    </div>
+                </div>
+
                 <div class="flex justify-between items-center mb-3">
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Split Among</label>
+                    <span class="text-[11px] text-slate-500 font-bold">Split calculation</span>
                     <span id="split-calc-display" class="text-sm font-black text-teal-600 bg-teal-50 px-3 py-1 rounded-lg">₹0 / each</span>
                 </div>
-                <p class="text-[11px] text-slate-400 mb-5 font-medium leading-relaxed">Tap to include/exclude. Amount redistributes equally.</p>
-                <div id="split-checkboxes" class="grid grid-cols-2 gap-3"></div>
+                
+                <!-- Equal Split Container -->
+                <div id="split-equal-container" class="transition-all">
+                    <p class="text-[11px] text-slate-400 mb-4 font-medium leading-relaxed">Tap to include/exclude. Amount redistributes equally.</p>
+                    <div id="split-checkboxes" class="grid grid-cols-2 gap-3"></div>
+                </div>
+
+                <!-- Exact Split Container -->
+                <div id="split-exact-container" class="hidden transition-all space-y-2">
+                    <p class="text-[11px] text-slate-400 mb-4 font-medium leading-relaxed">Enter specific amounts. Must sum up to total.</p>
+                    <div id="exact-inputs-list" class="space-y-2.5"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -289,6 +311,7 @@
         let modalAmount = 0;
         let currentUser = null; 
         let editingExpenseId = null;
+        let splitMode = 'equal'; // 'equal' or 'exact'
 
         // --- Core Engine & Merging Sync ---
         window.onload = async function () {
@@ -342,10 +365,9 @@
             }
         }
 
-        // SMART SYNC MERGE ENGINE - Prevents Data Overwrites!
+        // SMART SYNC MERGE ENGINE
         async function saveData() {
             try {
-                // 1. Fetch exact latest state from the cloud right before pushing
                 const response = await fetch(GOOGLE_SCRIPT_URL);
                 const text = await response.text();
                 let cloudData = { travelers: [], expenses: [], activities: [] };
@@ -353,16 +375,13 @@
                     try { cloudData = JSON.parse(text); } catch(e) {}
                 }
 
-                // 2. Merge Travelers (Union of both arrays)
                 const mergedTravelers = [...new Set([...(cloudData.travelers || []), ...(appData.travelers || [])])];
 
-                // 3. Merge Activities (Union by ID)
                 const actMap = new Map();
                 (cloudData.activities || []).forEach(a => actMap.set(a.id, a));
                 (appData.activities || []).forEach(a => actMap.set(a.id, a));
                 const mergedActivities = Array.from(actMap.values()).sort((a, b) => b.id - a.id);
 
-                // 4. Merge Expenses (Resolve conflicts using updatedAt timestamp)
                 const expMap = new Map();
                 (cloudData.expenses || []).forEach(e => {
                     if(!e.updatedAt) e.updatedAt = parseInt(e.id) || 0; 
@@ -372,7 +391,6 @@
                 (appData.expenses || []).forEach(localExp => {
                     if(!localExp.updatedAt) localExp.updatedAt = parseInt(localExp.id) || 0;
                     const cloudExp = expMap.get(localExp.id);
-                    // Local wins if it is newer or doesn't exist in cloud
                     if (!cloudExp || localExp.updatedAt > cloudExp.updatedAt) {
                         expMap.set(localExp.id, localExp);
                     }
@@ -380,16 +398,9 @@
 
                 const mergedExpenses = Array.from(expMap.values());
 
-                // 5. Update local state
-                appData = {
-                    travelers: mergedTravelers,
-                    expenses: mergedExpenses,
-                    activities: mergedActivities
-                };
-
+                appData = { travelers: mergedTravelers, expenses: mergedExpenses, activities: mergedActivities };
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
 
-                // 6. Push perfect merged state to cloud
                 await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify(appData),
@@ -488,11 +499,7 @@
             if (tab === 'activity') renderActivity(main);
         }
 
-        // --- Core Helpers ---
-        function getValidExpenses() {
-            // Filters out soft-deleted items
-            return appData.expenses.filter(e => !e.isDeleted);
-        }
+        function getValidExpenses() { return appData.expenses.filter(e => !e.isDeleted); }
 
         // --- Renderers ---
         function renderExpenses(container) {
@@ -514,7 +521,6 @@
             sorted.forEach((exp, index) => {
                 const isSettlement = exp.isSettlement;
                 const icon = getCategoryIcon(exp.category);
-                
                 let payerText = exp.payer === currentUser.name ? "You" : exp.payer;
                 const splitText = isSettlement ? `Paid to ${Object.keys(exp.split)[0]}` : `Paid by ${payerText}`;
                 
@@ -523,8 +529,7 @@
 
                 const card = document.createElement('div');
                 card.className = `glass-card p-5 rounded-3xl flex justify-between items-center fade-in cursor-pointer hover:bg-slate-50 transition-colors`;
-                card.style.animationDelay = `${delay}s`;
-                card.style.opacity = '0'; 
+                card.style.animationDelay = `${delay}s`; card.style.opacity = '0'; 
                 card.onclick = () => openExpenseDetails(exp.id);
                 
                 card.innerHTML = `
@@ -583,7 +588,6 @@
                 transactions.forEach((tx) => {
                     let fromName = tx.from === currentUser.name ? "You" : tx.from;
                     let toName = tx.to === currentUser.name ? "You" : tx.to;
-                    
                     html += `
                         <div class="glass-card p-5 rounded-3xl flex justify-between items-center shadow-glass-sm">
                             <div class="flex-1 pr-4">
@@ -619,7 +623,6 @@
                     </div>`;
             });
             html += `</div></div>`;
-
             container.innerHTML = html;
         }
 
@@ -669,7 +672,6 @@
                     <span class="text-xl">👥</span> Manage Travelers
                 </button>
             </div>`;
-
             container.innerHTML = html;
         }
 
@@ -716,7 +718,6 @@
                         </div>
                     </div>`;
             });
-            
             html += `</div>`;
             container.innerHTML = html;
         }
@@ -789,7 +790,6 @@
                 if(confirm("Permanently delete this transaction?")) {
                     const exp = appData.expenses.find(e => e.id === id);
                     if(exp) {
-                        // Soft Delete Engine
                         exp.isDeleted = true;
                         exp.updatedAt = Date.now();
                         logActivity('DELETE', exp.desc, exp.amount, currentUser.name);
@@ -809,7 +809,6 @@
             const dateStr = new Date(exp.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             let payerName = exp.payer === currentUser.name ? "You" : exp.payer;
             
-            // Link Edit button to form prepopulation
             document.getElementById('btn-edit-expense').onclick = () => {
                 closeDetailsModal();
                 editingExpenseId = exp.id;
@@ -898,8 +897,45 @@
             }
         }
 
-        // --- UI Listeners & Form Control ---
+        // --- Setup Listeners & Split Toggle ---
+        function setSplitMode(mode) {
+            splitMode = mode;
+            const btnEq = document.getElementById('btn-split-equal');
+            const btnEx = document.getElementById('btn-split-exact');
+            const contEq = document.getElementById('split-equal-container');
+            const contEx = document.getElementById('split-exact-container');
+
+            if (mode === 'equal') {
+                btnEq.className = "px-4 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-teal-600 transition-all";
+                btnEx.className = "px-4 py-1.5 text-xs font-bold rounded-md text-slate-500 transition-all hover:bg-slate-200/50";
+                contEq.classList.remove('hidden'); contEx.classList.add('hidden');
+                updateSplitCalculations();
+            } else {
+                btnEx.className = "px-4 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-teal-600 transition-all";
+                btnEq.className = "px-4 py-1.5 text-xs font-bold rounded-md text-slate-500 transition-all hover:bg-slate-200/50";
+                contEx.classList.remove('hidden'); contEq.classList.add('hidden');
+                
+                // Auto-fill exact inputs if empty
+                const exactInputs = document.querySelectorAll('.exact-split-input');
+                const sum = Array.from(exactInputs).reduce((acc, input) => acc + (parseFloat(input.value) || 0), 0);
+                if (sum === 0 && modalAmount > 0) {
+                    const checked = document.querySelectorAll('.split-cb:checked');
+                    if (checked.length > 0) {
+                        const perPerson = modalAmount / checked.length;
+                        checked.forEach(cb => {
+                            const input = document.querySelector(`.exact-split-input[data-person="${cb.value}"]`);
+                            if (input) input.value = perPerson.toFixed(2);
+                        });
+                    }
+                }
+                updateExactTotal();
+            }
+        }
+
         function setupEventListeners() {
+            document.getElementById('btn-split-equal').addEventListener('click', () => setSplitMode('equal'));
+            document.getElementById('btn-split-exact').addEventListener('click', () => setSplitMode('exact'));
+
             document.getElementById('btn-reset').addEventListener('click', () => {
                 const pass = prompt("🔒 Enter admin password to reset trip:");
                 if (pass === null) return;
@@ -930,17 +966,27 @@
                 setTimeout(() => modalExp.classList.add('hidden'), 300);
             });
 
-            amtInput.addEventListener('input', (e) => { modalAmount = parseFloat(e.target.value) || 0; updateSplitCalculations(); });
+            amtInput.addEventListener('input', (e) => { 
+                modalAmount = parseFloat(e.target.value) || 0; 
+                if(splitMode === 'equal') updateSplitCalculations();
+                else updateExactTotal();
+            });
 
             curSelect.addEventListener('change', (e) => {
                 const sym = document.getElementById('currency-symbol');
                 const hint = document.getElementById('conversion-hint');
+                const exactSymbols = document.querySelectorAll('.currency-symbol-exact');
+                
                 if (e.target.value === 'THB') {
                     sym.innerText = '฿'; hint.classList.remove('hidden');
+                    exactSymbols.forEach(el => el.innerText = '฿');
                 } else {
                     sym.innerText = '₹'; hint.classList.add('hidden');
+                    exactSymbols.forEach(el => el.innerText = '₹');
                 }
-                updateSplitCalculations();
+                
+                if(splitMode === 'equal') updateSplitCalculations();
+                else updateExactTotal();
             });
 
             document.getElementById('btn-save-expense').addEventListener('click', saveExpense);
@@ -952,12 +998,11 @@
             });
         }
 
-        // Handles populating the form for BOTH New and Edit modes
         function populateExpenseForm(id = null) {
             const title = document.getElementById('modal-expense-title');
             
             if (id) {
-                // Edit Mode
+                // EDIT MODE
                 title.innerText = "Edit Expense";
                 const exp = appData.expenses.find(e => e.id === id);
                 document.getElementById('exp-desc').value = exp.desc;
@@ -968,25 +1013,53 @@
 
                 const sym = document.getElementById('currency-symbol');
                 const hint = document.getElementById('conversion-hint');
+                const curSym = exp.currency === 'THB' ? '฿' : '₹';
                 if (exp.currency === 'THB') { sym.innerText = '฿'; hint.classList.remove('hidden'); } 
                 else { sym.innerText = '₹'; hint.classList.add('hidden'); }
 
                 const payerSelect = document.getElementById('exp-payer');
                 payerSelect.innerHTML = appData.travelers.map(t => `<option value="${t}" ${t === exp.payer ? 'selected' : ''}>${t === currentUser.name ? 'You' : t}</option>`).join('');
 
-                const splitCheckboxes = Object.keys(exp.split);
+                // Detect if it was an equal or exact split originally
+                let isEqualSplit = true;
+                const splitKeys = Object.keys(exp.split);
+                const avg = exp.amount / splitKeys.length;
+                for (let k in exp.split) {
+                    if (Math.abs(exp.split[k] - avg) > 0.05) { isEqualSplit = false; break; }
+                }
+
+                // Render Checkboxes (Equal)
                 const cbContainer = document.getElementById('split-checkboxes');
                 cbContainer.innerHTML = appData.travelers.map(t => `
                     <label class="split-cb-wrapper relative block hit-target cursor-pointer">
-                        <input type="checkbox" value="${t}" class="split-cb peer sr-only" ${splitCheckboxes.includes(t) ? 'checked' : ''} onchange="updateSplitCalculations()">
+                        <input type="checkbox" value="${t}" class="split-cb peer sr-only" ${splitKeys.includes(t) ? 'checked' : ''} onchange="updateSplitCalculations()">
                         <div class="w-full h-full p-3 rounded-2xl border-2 text-center text-sm font-bold transition-colors shadow-sm flex items-center justify-center truncate px-2">
                             ${t === currentUser.name ? 'You' : t}
                         </div>
                     </label>
                 `).join('');
 
+                // Render Inputs (Exact)
+                const exContainer = document.getElementById('exact-inputs-list');
+                exContainer.innerHTML = appData.travelers.map(t => {
+                    let val = '';
+                    if (!isEqualSplit && splitKeys.includes(t)) {
+                        val = exp.currency === 'THB' ? (exp.split[t] / THB_TO_INR_RATE).toFixed(2) : exp.split[t].toFixed(2);
+                    }
+                    return `
+                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded-xl border border-slate-100">
+                            <span class="text-sm font-bold text-slate-700 ml-2 truncate">${t === currentUser.name ? 'You' : t}</span>
+                            <div class="relative w-1/2 shrink-0">
+                                <span class="absolute left-3 top-2 text-slate-400 font-medium text-sm currency-symbol-exact">${curSym}</span>
+                                <input type="number" data-person="${t}" inputmode="decimal" class="exact-split-input w-full bg-white border border-slate-200 rounded-lg py-1.5 pl-7 pr-2 text-right font-bold text-slate-800 focus:border-teal-500 outline-none" placeholder="0" value="${val}" oninput="updateExactTotal()">
+                            </div>
+                        </div>`;
+                }).join('');
+
+                setSplitMode(isEqualSplit ? 'equal' : 'exact');
+
             } else {
-                // Add Mode
+                // ADD MODE
                 title.innerText = "Add Expense";
                 document.getElementById('exp-desc').value = '';
                 document.getElementById('exp-amount').value = '';
@@ -1007,11 +1080,24 @@
                         </div>
                     </label>
                 `).join('');
+
+                const exContainer = document.getElementById('exact-inputs-list');
+                exContainer.innerHTML = appData.travelers.map(t => `
+                    <div class="flex justify-between items-center bg-slate-50 p-2 rounded-xl border border-slate-100">
+                        <span class="text-sm font-bold text-slate-700 ml-2 truncate">${t === currentUser.name ? 'You' : t}</span>
+                        <div class="relative w-1/2 shrink-0">
+                            <span class="absolute left-3 top-2 text-slate-400 font-medium text-sm currency-symbol-exact">₹</span>
+                            <input type="number" data-person="${t}" inputmode="decimal" class="exact-split-input w-full bg-white border border-slate-200 rounded-lg py-1.5 pl-7 pr-2 text-right font-bold text-slate-800 focus:border-teal-500 outline-none" placeholder="0" oninput="updateExactTotal()">
+                        </div>
+                    </div>
+                `).join('');
+
+                setSplitMode('equal');
             }
-            updateSplitCalculations();
         }
 
         window.updateSplitCalculations = function() {
+            if (splitMode !== 'equal') return;
             const checkboxes = document.querySelectorAll('.split-cb:checked');
             const count = checkboxes.length;
             const display = document.getElementById('split-calc-display');
@@ -1026,11 +1112,43 @@
 
             if (count === 0) {
                 display.innerText = "₹0 / each";
-                display.classList.replace('text-teal-600', 'text-orange-500'); display.classList.replace('bg-teal-50', 'bg-orange-50');
+                display.className = "text-sm font-black text-orange-500 bg-orange-50 px-3 py-1 rounded-lg";
             } else {
                 const perPerson = amountInINR / count;
                 display.innerText = `₹${perPerson.toFixed(0)} / each`;
-                display.classList.replace('text-orange-500', 'text-teal-600'); display.classList.replace('bg-orange-50', 'bg-teal-50');
+                display.className = "text-sm font-black text-teal-600 bg-teal-50 px-3 py-1 rounded-lg";
+            }
+        };
+
+        window.updateExactTotal = function() {
+            if (splitMode !== 'exact') return;
+            const inputs = document.querySelectorAll('.exact-split-input');
+            let currentTotal = 0;
+            inputs.forEach(input => { currentTotal += parseFloat(input.value) || 0; });
+
+            const display = document.getElementById('split-calc-display');
+            const currency = document.getElementById('exp-currency').value;
+            const sym = currency === 'THB' ? '฿' : '₹';
+            const hint = document.getElementById('conversion-hint');
+
+            if (currency === 'THB') {
+                hint.innerText = `≈ ₹${(modalAmount * THB_TO_INR_RATE).toFixed(2)} (INR)`;
+            }
+
+            let diff = modalAmount - currentTotal;
+            
+            if (modalAmount === 0) {
+                display.innerText = `${sym}0.00 left`;
+                display.className = "text-sm font-black text-slate-500 bg-slate-100 px-3 py-1 rounded-lg";
+            } else if (Math.abs(diff) < 0.01) {
+                display.innerText = "Match! ✓";
+                display.className = "text-sm font-black text-teal-600 bg-teal-50 px-3 py-1 rounded-lg";
+            } else if (diff > 0) {
+                display.innerText = `${sym}${diff.toFixed(2)} left`;
+                display.className = "text-sm font-black text-orange-500 bg-orange-50 px-3 py-1 rounded-lg";
+            } else {
+                display.innerText = `Over by ${sym}${Math.abs(diff).toFixed(2)}`;
+                display.className = "text-sm font-black text-red-500 bg-red-50 px-3 py-1 rounded-lg";
             }
         };
 
@@ -1040,26 +1158,57 @@
             const currency = document.getElementById('exp-currency').value;
             const payer = document.getElementById('exp-payer').value;
             const category = document.getElementById('exp-category').value;
-            const checkboxes = document.querySelectorAll('.split-cb:checked');
             
             if (!desc) return alert("Please enter a description.");
             if (!inputAmount || inputAmount <= 0) return alert("Please enter a valid amount.");
-            if (checkboxes.length === 0) return alert("Select at least one person to split with.");
 
             let finalAmountINR = inputAmount;
             if (currency === 'THB') finalAmountINR = inputAmount * THB_TO_INR_RATE;
 
             let splitObj = {};
-            const baseSplit = Math.round((finalAmountINR / checkboxes.length) * 100) / 100;
-            let totalAssigned = 0;
-            
-            checkboxes.forEach((cb, idx) => {
-                if (idx === checkboxes.length - 1) {
-                    splitObj[cb.value] = Math.round((finalAmountINR - totalAssigned) * 100) / 100;
-                } else {
-                    splitObj[cb.value] = baseSplit; totalAssigned += baseSplit;
+
+            if (splitMode === 'equal') {
+                const checkboxes = document.querySelectorAll('.split-cb:checked');
+                if (checkboxes.length === 0) return alert("Select at least one person to split with.");
+                
+                const baseSplit = Math.round((finalAmountINR / checkboxes.length) * 100) / 100;
+                let totalAssigned = 0;
+                
+                checkboxes.forEach((cb, idx) => {
+                    if (idx === checkboxes.length - 1) {
+                        splitObj[cb.value] = Math.round((finalAmountINR - totalAssigned) * 100) / 100;
+                    } else {
+                        splitObj[cb.value] = baseSplit; totalAssigned += baseSplit;
+                    }
+                });
+            } else {
+                const inputs = document.querySelectorAll('.exact-split-input');
+                let inputSum = 0;
+                let totalAssignedINR = 0;
+
+                inputs.forEach(input => {
+                    let val = parseFloat(input.value) || 0;
+                    if (val > 0) {
+                        inputSum += val;
+                        let valINR = currency === 'THB' ? val * THB_TO_INR_RATE : val;
+                        splitObj[input.dataset.person] = Math.round(valINR * 100) / 100;
+                        totalAssignedINR += splitObj[input.dataset.person];
+                    }
+                });
+
+                if (Math.abs(inputSum - inputAmount) > 0.05) {
+                    return alert("Exact amounts must sum up perfectly to the total amount.");
                 }
-            });
+                if (Object.keys(splitObj).length === 0) return alert("Enter amounts for at least one person.");
+                
+                // Fix rounding drift on the last person
+                const keys = Object.keys(splitObj);
+                const lastKey = keys[keys.length - 1];
+                let drift = finalAmountINR - totalAssignedINR;
+                if (Math.abs(drift) > 0.001) {
+                    splitObj[lastKey] = Math.round((splitObj[lastKey] + drift) * 100) / 100;
+                }
+            }
 
             if (editingExpenseId) {
                 // Update Existing
@@ -1067,7 +1216,7 @@
                 if (index !== -1) {
                     appData.expenses[index] = {
                         ...appData.expenses[index],
-                        updatedAt: Date.now(), // Crucial for merge engine
+                        updatedAt: Date.now(), 
                         desc: desc, amount: finalAmountINR, originalAmount: inputAmount,
                         currency: currency, payer: payer, category: category, split: splitObj
                     };
