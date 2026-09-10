@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ThaiSplit - Trip Expense Tracker</title>
-
+    
+    <!-- Anti-Caching Meta Tags -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    
+    <title>ThaiSplit - Trip Expense Tracker</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -70,7 +71,7 @@
         .split-cb-wrapper input:checked + div { background-color: #008080; color: white; border-color: #008080; }
         .split-cb-wrapper input:not(:checked) + div { background-color: rgba(255, 255, 255, 0.6); color: #64748b; border-color: #cbd5e1; }
 
-        .modal-enter { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .modal-enter { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .modal-exit { animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         .fade-in { animation: fadeIn 0.3s ease-out forwards; }
         
@@ -131,9 +132,6 @@
                 <p id="user-greeting" class="text-[11px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Welcome</p>
             </div>
             <div class="flex items-center gap-2">
-                <button onclick="logout()" class="text-slate-500 text-[10px] uppercase tracking-wider font-bold hit-target px-3 flex items-center justify-center btn-press bg-slate-100 rounded-full border border-slate-200">
-                    Switch User
-                </button>
                 <button id="btn-reset" class="text-orange-500 text-[10px] uppercase tracking-wider font-bold hit-target px-3 flex items-center justify-center btn-press bg-orange-50 rounded-full border border-orange-100">
                     Reset
                 </button>
@@ -147,36 +145,40 @@
         </button>
 
         <nav class="glass-header pb-safe shadow-up shrink-0 w-full z-10 fixed bottom-0 rounded-t-3xl border-t border-white/60">
-            <div class="flex justify-around items-center h-20 px-2">
-                <button onclick="switchTab('expenses')" id="tab-expenses" class="flex flex-col items-center justify-center w-full hit-target tab-active transition-all duration-300">
-                    <span class="text-2xl mb-1 drop-shadow-sm">🧾</span>
-                    <span class="text-[10px] uppercase tracking-wider">Expenses</span>
+            <div class="flex justify-between items-center h-20 px-4">
+                <button onclick="switchTab('expenses')" id="tab-expenses" class="flex flex-col items-center justify-center w-1/4 hit-target tab-active transition-all duration-300">
+                    <span class="text-[22px] mb-1 drop-shadow-sm">🧾</span>
+                    <span class="text-[9px] uppercase tracking-wider font-bold">Expenses</span>
                 </button>
-                <button onclick="switchTab('balances')" id="tab-balances" class="flex flex-col items-center justify-center w-full hit-target tab-inactive transition-all duration-300">
-                    <span class="text-2xl mb-1 drop-shadow-sm">⚖️</span>
-                    <span class="text-[10px] uppercase tracking-wider">Balances</span>
+                <button onclick="switchTab('balances')" id="tab-balances" class="flex flex-col items-center justify-center w-1/4 hit-target tab-inactive transition-all duration-300">
+                    <span class="text-[22px] mb-1 drop-shadow-sm">⚖️</span>
+                    <span class="text-[9px] uppercase tracking-wider font-bold">Balances</span>
                 </button>
-                <button onclick="switchTab('summary')" id="tab-summary" class="flex flex-col items-center justify-center w-full hit-target tab-inactive transition-all duration-300">
-                    <span class="text-2xl mb-1 drop-shadow-sm">📊</span>
-                    <span class="text-[10px] uppercase tracking-wider">Summary</span>
+                <button onclick="switchTab('summary')" id="tab-summary" class="flex flex-col items-center justify-center w-1/4 hit-target tab-inactive transition-all duration-300">
+                    <span class="text-[22px] mb-1 drop-shadow-sm">📊</span>
+                    <span class="text-[9px] uppercase tracking-wider font-bold">Summary</span>
+                </button>
+                <button onclick="switchTab('activity')" id="tab-activity" class="flex flex-col items-center justify-center w-1/4 hit-target tab-inactive transition-all duration-300">
+                    <span class="text-[22px] mb-1 drop-shadow-sm">🕒</span>
+                    <span class="text-[9px] uppercase tracking-wider font-bold">Activity</span>
                 </button>
             </div>
         </nav>
     </div>
 
     <!-- MODALS -->
-    <!-- FULL SCREEN MODAL: Add Expense -->
+    <!-- FULL SCREEN MODAL: Add/Edit Expense -->
     <div id="modal-expense" class="fixed inset-0 bg-slate-50/95 backdrop-blur-xl z-50 flex flex-col pt-safe hidden transform translate-y-full">
         <div class="flex justify-between items-center px-5 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200/50 shrink-0 relative z-20">
             <button id="btn-close-expense" class="text-slate-500 font-bold hit-target flex items-center btn-press text-sm">Cancel</button>
-            <h2 class="text-lg font-bold text-slate-800">Add Expense</h2>
+            <h2 id="modal-expense-title" class="text-lg font-bold text-slate-800">Add Expense</h2>
             <button id="btn-save-expense" class="text-teal-600 font-bold hit-target flex items-center btn-press text-sm">Save</button>
         </div>
         
         <div class="flex-1 overflow-y-auto px-5 py-6 space-y-6 relative">
             <div id="expense-loader" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-30 hidden flex-col items-center justify-center rounded-t-3xl">
                 <div class="animate-spin text-5xl mb-4">🌀</div>
-                <h3 class="text-lg font-black text-slate-800">Saving to Cloud...</h3>
+                <h3 class="text-lg font-black text-slate-800">Syncing to Cloud...</h3>
                 <p class="text-xs text-slate-500 font-bold mt-1">Please wait, do not close.</p>
             </div>
 
@@ -241,12 +243,12 @@
         <div class="flex justify-between items-center px-5 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200/50 shrink-0">
             <button onclick="closeDetailsModal()" class="text-slate-500 font-bold hit-target flex items-center btn-press text-sm">Close</button>
             <h2 class="text-lg font-bold text-slate-800">Expense Details</h2>
-            <div class="w-12"></div>
+            <button id="btn-edit-expense" class="text-teal-600 font-bold hit-target flex items-center justify-end btn-press text-sm">Edit</button>
         </div>
         <div id="details-content" class="flex-1 overflow-y-auto px-5 py-6 space-y-6"></div>
     </div>
 
-    <!-- FULL SCREEN MODAL: Manage Travelers (Dynamic) -->
+    <!-- FULL SCREEN MODAL: Manage Travelers -->
     <div id="modal-names" class="fixed inset-0 bg-slate-50/95 backdrop-blur-xl z-50 flex flex-col pt-safe hidden transform translate-y-full">
         <div class="flex justify-between items-center px-5 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200/50 shrink-0">
             <button id="btn-close-names" class="text-slate-500 font-bold hit-target flex items-center btn-press text-sm">Done</button>
@@ -273,33 +275,30 @@
         // ==========================================
         // ⚠️ CONFIGURATION: ADD YOUR GOOGLE SCRIPT URL HERE
         // ==========================================
-        const GOOGLE_SCRIPT_URL = 'YOUR_GOOGLE_SCRIPT_URL_HERE'; 
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVUwMueDK7RKkU953JiegITUJs-zYrLs-RfM0uZJFGjv3a4bdEt9ikK61V1E7rwTBAJg/exec'; 
         
         // --- Data Architecture & Constants ---
-        const STORAGE_KEY = 'thaiTripData_v6';
+        const STORAGE_KEY = 'thaiTripData_v7';
         const USER_KEY = 'thaiTripCurrentUser';
         const THB_TO_INR_RATE = 2.92;
         
-        let appData = { travelers: [], expenses: [] };
+        let appData = { travelers: [], expenses: [], activities: [] };
         let currentTab = 'expenses';
         let modalAmount = 0;
         let currentUser = null; 
+        let editingExpenseId = null; // Tracks if we are editing vs adding
 
         // --- Init & Cloud Data Sync ---
         window.onload = async function () {
-            // 1. Fetch Cloud Data First (so we know existing users)
             await loadData();
             
-            // 2. Hide splash screen
             const splash = document.getElementById('splash-screen');
             splash.style.opacity = '0';
             setTimeout(() => splash.classList.add('hidden'), 300);
 
-            // 3. Check if user is already logged in on this device
             const savedUser = localStorage.getItem(USER_KEY);
             if (savedUser) {
                 currentUser = JSON.parse(savedUser);
-                // Ensure they still exist in the appData (in case trip was reset)
                 if (!appData.travelers.includes(currentUser.name)) {
                     appData.travelers.push(currentUser.name);
                     await saveData();
@@ -319,6 +318,7 @@
                 
                 if (saved && Array.isArray(saved.travelers) && Array.isArray(saved.expenses)) {
                     appData = saved;
+                    if(!appData.activities) appData.activities = []; // Ensure activities array exists
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
                 } else {
                     loadFallback();
@@ -333,7 +333,10 @@
             const local = localStorage.getItem(STORAGE_KEY);
             if (local) {
                 const parsed = JSON.parse(local);
-                if (parsed && Array.isArray(parsed.travelers)) appData = parsed;
+                if (parsed && Array.isArray(parsed.travelers)) {
+                    appData = parsed;
+                    if(!appData.activities) appData.activities = [];
+                }
             }
         }
 
@@ -348,12 +351,23 @@
             } catch (error) { console.error("Cloud sync failed. Saved locally."); }
         }
 
+        function logActivity(type, desc, amount, byUser) {
+            if(!appData.activities) appData.activities = [];
+            appData.activities.push({
+                id: Date.now().toString(),
+                type: type, // 'ADD', 'EDIT', 'DELETE', 'SETTLE'
+                desc: desc,
+                amount: amount,
+                by: byUser,
+                timestamp: new Date().toISOString()
+            });
+        }
+
         // --- Soft Login Flow ---
         function showLoginScreen() {
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('login-screen').classList.add('flex');
             
-            // Populate existing users if any
             if (appData.travelers.length > 0) {
                 document.getElementById('existing-users-section').classList.remove('hidden');
                 const list = document.getElementById('existing-users-list');
@@ -365,9 +379,7 @@
             }
         }
 
-        function formatName(name) {
-            return name.trim().charAt(0).toUpperCase() + name.trim().slice(1);
-        }
+        function formatName(name) { return name.trim().charAt(0).toUpperCase() + name.trim().slice(1); }
 
         window.loginAsExisting = async function(name) {
             currentUser = { name: name };
@@ -380,8 +392,6 @@
             if(!inputName.trim()) return alert("Please enter your name");
             
             inputName = formatName(inputName);
-            
-            // Check if name already exists (case insensitive)
             const exists = appData.travelers.find(t => t.toLowerCase() === inputName.toLowerCase());
             if (exists) {
                 currentUser = { name: exists };
@@ -395,20 +405,11 @@
             startMainApp();
         }
 
-        window.logout = function() {
-            if(confirm("Switch user profile on this device?")) {
-                localStorage.removeItem(USER_KEY);
-                location.reload();
-            }
-        }
-
         function startMainApp() {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('login-screen').classList.remove('flex');
-            
             document.getElementById('app-wrapper').classList.remove('hidden');
             document.getElementById('app-wrapper').classList.add('flex');
-            
             document.getElementById('user-greeting').innerText = `Hi, ${currentUser.name}`;
 
             setupEventListeners();
@@ -418,13 +419,13 @@
         // --- Navigation ---
         function switchTab(tab) {
             currentTab = tab;
-            ['expenses', 'balances', 'summary'].forEach(t => {
+            ['expenses', 'balances', 'summary', 'activity'].forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 if (t === tab) el.classList.replace('tab-inactive', 'tab-active');
                 else el.classList.replace('tab-active', 'tab-inactive');
             });
 
-            document.getElementById('btn-add-expense').style.display = (tab === 'expenses') ? 'flex' : 'none';
+            document.getElementById('btn-add-expense').style.display = (tab === 'expenses' || tab === 'activity') ? 'flex' : 'none';
 
             const main = document.getElementById('main-content');
             main.innerHTML = ''; main.scrollTop = 0;
@@ -432,6 +433,7 @@
             if (tab === 'expenses') renderExpenses(main);
             if (tab === 'balances') renderBalances(main);
             if (tab === 'summary') renderSummary(main);
+            if (tab === 'activity') renderActivity(main);
         }
 
         // --- Renderers ---
@@ -454,8 +456,7 @@
                 const isSettlement = exp.isSettlement;
                 const icon = getCategoryIcon(exp.category);
                 
-                let payerText = exp.payer;
-                if (payerText === currentUser.name) payerText = "You";
+                let payerText = exp.payer === currentUser.name ? "You" : exp.payer;
                 const splitText = isSettlement ? `Paid to ${Object.keys(exp.split)[0]}` : `Paid by ${payerText}`;
                 
                 const dateStr = new Date(exp.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -611,6 +612,59 @@
             container.innerHTML = html;
         }
 
+        function renderActivity(container) {
+            if (!appData.activities || appData.activities.length === 0) {
+                container.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-center mt-24 fade-in">
+                        <div class="text-7xl mb-6 bg-white/60 backdrop-blur-sm rounded-[2rem] p-6 shadow-glass-sm border border-white/50 inline-block transform -rotate-6">🕒</div>
+                        <h2 class="text-2xl font-black text-slate-800 mb-3">No Activity Yet</h2>
+                        <p class="text-sm px-10 text-slate-600 font-medium leading-relaxed">Transactions and edits will appear here.</p>
+                    </div>`;
+                return;
+            }
+
+            let html = `<div class="fade-in space-y-3">`;
+            
+            // Sort newest first
+            const sortedActivities = [...appData.activities].reverse();
+
+            sortedActivities.forEach((act, index) => {
+                const dateObj = new Date(act.timestamp);
+                const dateStr = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                const timeStr = dateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute:'2-digit' });
+                const delay = Math.min(index * 0.05, 0.5);
+                
+                let icon = '📝';
+                let actionText = 'updated';
+                let color = 'text-teal-600';
+
+                if (act.type === 'ADD') { icon = '✨'; actionText = 'added'; }
+                if (act.type === 'DELETE') { icon = '🗑️'; actionText = 'deleted'; color = 'text-orange-500'; }
+                if (act.type === 'SETTLE') { icon = '🤝'; actionText = 'logged'; }
+
+                let displayName = act.by === currentUser.name ? "You" : act.by;
+
+                html += `
+                    <div class="glass-card p-4 rounded-2xl flex items-start gap-4 fade-in hover:bg-slate-50 transition-colors" style="animation-delay: ${delay}s; opacity: 0;">
+                        <div class="text-xl bg-white/70 w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-slate-100">
+                            ${icon}
+                        </div>
+                        <div class="flex-1 pt-0.5">
+                            <p class="text-sm text-slate-700 leading-snug">
+                                <span class="font-bold text-slate-900">${displayName}</span> ${actionText} <span class="font-bold text-slate-900">${act.desc}</span>
+                            </p>
+                            <div class="flex items-center gap-2 mt-1.5">
+                                <span class="text-xs font-black ${color}">₹${act.amount.toFixed(2)}</span>
+                                <span class="text-[10px] text-slate-400 font-bold">• ${dateStr}, ${timeStr}</span>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
         // --- Core Math: Settlement Engine ---
         function calculateSettlements() {
             let balances = {};
@@ -664,6 +718,7 @@
                     split: { [to]: amount }, date: new Date().toISOString()
                 };
                 appData.expenses.push(settlementExp);
+                logActivity('SETTLE', settlementExp.desc, amount, currentUser.name);
                 await saveData(); 
                 renderBalances(document.getElementById('main-content'));
             }
@@ -675,6 +730,9 @@
             if (pass === null) return;
             if (pass === "5241") {
                 if(confirm("Permanently delete this transaction?")) {
+                    const exp = appData.expenses.find(e => e.id === id);
+                    if(exp) logActivity('DELETE', exp.desc, exp.amount, currentUser.name);
+                    
                     appData.expenses = appData.expenses.filter(e => e.id !== id);
                     await saveData();
                     switchTab(currentTab);
@@ -689,8 +747,18 @@
 
             const icon = getCategoryIcon(exp.category);
             const dateStr = new Date(exp.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            
             let payerName = exp.payer === currentUser.name ? "You" : exp.payer;
+            
+            // Set up Edit Button Action
+            document.getElementById('btn-edit-expense').onclick = () => {
+                closeDetailsModal();
+                editingExpenseId = exp.id;
+                setTimeout(() => {
+                    populateExpenseForm(exp.id);
+                    const modalExp = document.getElementById('modal-expense');
+                    modalExp.classList.remove('hidden'); modalExp.classList.add('modal-enter'); modalExp.classList.remove('modal-exit');
+                }, 350);
+            };
             
             let html = `
                 <div class="bg-white p-6 rounded-3xl shadow-glass-sm text-center border border-slate-100">
@@ -778,7 +846,7 @@
                 
                 if (pass === "Prat@112890") {
                     if(confirm("⚠️ DANGER: This will permanently delete all expenses and reset the trip on the cloud too. Are you absolutely sure?")) {
-                        appData = { travelers: [currentUser.name], expenses: [] };
+                        appData = { travelers: [currentUser.name], expenses: [], activities: [] };
                         saveData();
                         switchTab('expenses');
                         alert("Trip has been successfully reset.");
@@ -792,6 +860,7 @@
             
             document.getElementById('btn-add-expense').addEventListener('click', () => {
                 if(appData.travelers.length < 1) return alert("Please add travelers in the Summary tab first.");
+                editingExpenseId = null; // Clear edit state
                 populateExpenseForm();
                 modalExp.classList.remove('hidden'); modalExp.classList.add('modal-enter'); modalExp.classList.remove('modal-exit');
             });
@@ -826,27 +895,62 @@
             });
         }
 
-        function populateExpenseForm() {
-            document.getElementById('exp-desc').value = '';
-            document.getElementById('exp-amount').value = '';
-            document.getElementById('exp-currency').value = 'INR';
-            document.getElementById('currency-symbol').innerText = '₹';
-            document.getElementById('conversion-hint').classList.add('hidden');
-            modalAmount = 0; document.getElementById('exp-category').value = 'Food';
+        // populateExpenseForm handles both NEW expenses and EDITING expenses
+        function populateExpenseForm(id = null) {
+            const title = document.getElementById('modal-expense-title');
+            
+            if (id) {
+                // EDIT MODE
+                title.innerText = "Edit Expense";
+                const exp = appData.expenses.find(e => e.id === id);
+                document.getElementById('exp-desc').value = exp.desc;
+                document.getElementById('exp-amount').value = exp.originalAmount || exp.amount;
+                document.getElementById('exp-currency').value = exp.currency || 'INR';
+                document.getElementById('exp-category').value = exp.category;
+                modalAmount = exp.originalAmount || exp.amount;
 
-            const payerSelect = document.getElementById('exp-payer');
-            payerSelect.innerHTML = appData.travelers.map(t => `<option value="${t}" ${t === currentUser.name ? 'selected' : ''}>${t === currentUser.name ? 'You' : t}</option>`).join('');
+                const sym = document.getElementById('currency-symbol');
+                const hint = document.getElementById('conversion-hint');
+                if (exp.currency === 'THB') { sym.innerText = '฿'; hint.classList.remove('hidden'); } 
+                else { sym.innerText = '₹'; hint.classList.add('hidden'); }
 
-            const cbContainer = document.getElementById('split-checkboxes');
-            cbContainer.innerHTML = appData.travelers.map(t => `
-                <label class="split-cb-wrapper relative block hit-target cursor-pointer">
-                    <input type="checkbox" value="${t}" class="split-cb peer sr-only" checked onchange="updateSplitCalculations()">
-                    <div class="w-full h-full p-3 rounded-2xl border-2 text-center text-sm font-bold transition-colors shadow-sm flex items-center justify-center truncate px-2">
-                        ${t === currentUser.name ? 'You' : t}
-                    </div>
-                </label>
-            `).join('');
+                const payerSelect = document.getElementById('exp-payer');
+                payerSelect.innerHTML = appData.travelers.map(t => `<option value="${t}" ${t === exp.payer ? 'selected' : ''}>${t === currentUser.name ? 'You' : t}</option>`).join('');
 
+                const splitCheckboxes = Object.keys(exp.split);
+                const cbContainer = document.getElementById('split-checkboxes');
+                cbContainer.innerHTML = appData.travelers.map(t => `
+                    <label class="split-cb-wrapper relative block hit-target cursor-pointer">
+                        <input type="checkbox" value="${t}" class="split-cb peer sr-only" ${splitCheckboxes.includes(t) ? 'checked' : ''} onchange="updateSplitCalculations()">
+                        <div class="w-full h-full p-3 rounded-2xl border-2 text-center text-sm font-bold transition-colors shadow-sm flex items-center justify-center truncate px-2">
+                            ${t === currentUser.name ? 'You' : t}
+                        </div>
+                    </label>
+                `).join('');
+
+            } else {
+                // NEW MODE
+                title.innerText = "Add Expense";
+                document.getElementById('exp-desc').value = '';
+                document.getElementById('exp-amount').value = '';
+                document.getElementById('exp-currency').value = 'INR';
+                document.getElementById('currency-symbol').innerText = '₹';
+                document.getElementById('conversion-hint').classList.add('hidden');
+                modalAmount = 0; document.getElementById('exp-category').value = 'Food';
+
+                const payerSelect = document.getElementById('exp-payer');
+                payerSelect.innerHTML = appData.travelers.map(t => `<option value="${t}" ${t === currentUser.name ? 'selected' : ''}>${t === currentUser.name ? 'You' : t}</option>`).join('');
+
+                const cbContainer = document.getElementById('split-checkboxes');
+                cbContainer.innerHTML = appData.travelers.map(t => `
+                    <label class="split-cb-wrapper relative block hit-target cursor-pointer">
+                        <input type="checkbox" value="${t}" class="split-cb peer sr-only" checked onchange="updateSplitCalculations()">
+                        <div class="w-full h-full p-3 rounded-2xl border-2 text-center text-sm font-bold transition-colors shadow-sm flex items-center justify-center truncate px-2">
+                            ${t === currentUser.name ? 'You' : t}
+                        </div>
+                    </label>
+                `).join('');
+            }
             updateSplitCalculations();
         }
 
@@ -900,14 +1004,31 @@
                 }
             });
 
-            const newExp = {
-                id: Date.now().toString(),
-                desc: desc, amount: finalAmountINR, originalAmount: inputAmount,
-                currency: currency, payer: payer, category: category,
-                split: splitObj, date: new Date().toISOString(), isSettlement: false
-            };
-
-            appData.expenses.push(newExp);
+            if (editingExpenseId) {
+                // UPDATE EXISTING
+                const index = appData.expenses.findIndex(e => e.id === editingExpenseId);
+                if (index !== -1) {
+                    appData.expenses[index] = {
+                        ...appData.expenses[index],
+                        desc: desc, amount: finalAmountINR, originalAmount: inputAmount,
+                        currency: currency, payer: payer, category: category, split: splitObj
+                    };
+                    logActivity('EDIT', desc, finalAmountINR, currentUser.name);
+                }
+            } else {
+                // INSERT NEW
+                const newExp = {
+                    id: Date.now().toString(),
+                    desc: desc, amount: finalAmountINR, originalAmount: inputAmount,
+                    currency: currency, payer: payer, category: category,
+                    split: splitObj, date: new Date().toISOString(), isSettlement: false
+                };
+                appData.expenses.push(newExp);
+                logActivity('ADD', desc, finalAmountINR, currentUser.name);
+            }
+            
+            // Cleanup state
+            editingExpenseId = null; 
             
             const loader = document.getElementById('expense-loader');
             loader.classList.remove('hidden'); loader.classList.add('flex');
@@ -918,7 +1039,7 @@
             
             const modal = document.getElementById('modal-expense');
             modal.classList.replace('modal-enter', 'modal-exit');
-            setTimeout(() => { modal.classList.add('hidden'); switchTab('expenses'); }, 300);
+            setTimeout(() => { modal.classList.add('hidden'); switchTab(currentTab); }, 300);
         }
 
         function getCategoryIcon(cat) {
