@@ -71,7 +71,6 @@
         .split-cb-wrapper input:checked + div { background-color: #008080; color: white; border-color: #008080; }
         .split-cb-wrapper input:not(:checked) + div { background-color: rgba(255, 255, 255, 0.6); color: #64748b; border-color: #cbd5e1; }
 
-        /* Exact Mode Input Spinners Hider */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
@@ -98,7 +97,7 @@
     <div id="splash-screen" class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-slate-50/90 backdrop-blur-xl transition-opacity duration-300">
         <div class="animate-pulse text-7xl mb-4">🌴</div>
         <h2 class="text-xl font-black text-teal-600">ThaiSplit</h2>
-        <p class="text-xs font-bold text-slate-500 mt-2 uppercase tracking-widest">Syncing with Cloud...</p>
+        <p id="splash-text" class="text-xs font-bold text-slate-500 mt-2 uppercase tracking-widest">Syncing with Cloud...</p>
     </div>
 
     <!-- CUSTOM LOGIN SCREEN -->
@@ -130,9 +129,9 @@
     <div id="app-wrapper" class="hidden flex-col h-full w-full">
         <header class="glass-header px-5 py-4 flex justify-between items-center z-10 shrink-0 shadow-glass-sm rounded-b-3xl">
             <div>
-                <!-- V1.6 Version Tag Added Here -->
+                <!-- VERSION BUMP TO V1.7 -->
                 <h1 class="text-2xl font-black text-teal-600 tracking-tight flex items-baseline">
-                    ThaiSplit 🌴 <span class="text-[10px] text-slate-400 font-bold ml-1.5 tracking-normal uppercase">V1.6</span>
+                    ThaiSplit 🌴 <span class="text-[10px] text-slate-400 font-bold ml-1.5 tracking-normal uppercase">V1.7</span>
                 </h1>
                 <p id="user-greeting" class="text-[11px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Welcome</p>
             </div>
@@ -311,7 +310,7 @@
         let modalAmount = 0;
         let currentUser = null; 
         let editingExpenseId = null;
-        let splitMode = 'equal'; // 'equal' or 'exact'
+        let splitMode = 'equal'; 
 
         // --- Core Engine & Merging Sync ---
         window.onload = async function () {
@@ -365,40 +364,44 @@
             }
         }
 
-        // SMART SYNC MERGE ENGINE
-        async function saveData() {
+        // SMART SYNC MERGE ENGINE - Prevents Data Overwrites!
+        // Added skipMerge flag for true wipe on reset
+        async function saveData(skipMerge = false) {
             try {
-                const response = await fetch(GOOGLE_SCRIPT_URL);
-                const text = await response.text();
-                let cloudData = { travelers: [], expenses: [], activities: [] };
-                if (text) {
-                    try { cloudData = JSON.parse(text); } catch(e) {}
+                if (!skipMerge) {
+                    const response = await fetch(GOOGLE_SCRIPT_URL);
+                    const text = await response.text();
+                    let cloudData = { travelers: [], expenses: [], activities: [] };
+                    if (text) {
+                        try { cloudData = JSON.parse(text); } catch(e) {}
+                    }
+
+                    const mergedTravelers = [...new Set([...(cloudData.travelers || []), ...(appData.travelers || [])])];
+
+                    const actMap = new Map();
+                    (cloudData.activities || []).forEach(a => actMap.set(a.id, a));
+                    (appData.activities || []).forEach(a => actMap.set(a.id, a));
+                    const mergedActivities = Array.from(actMap.values()).sort((a, b) => b.id - a.id);
+
+                    const expMap = new Map();
+                    (cloudData.expenses || []).forEach(e => {
+                        if(!e.updatedAt) e.updatedAt = parseInt(e.id) || 0; 
+                        expMap.set(e.id, e);
+                    });
+
+                    (appData.expenses || []).forEach(localExp => {
+                        if(!localExp.updatedAt) localExp.updatedAt = parseInt(localExp.id) || 0;
+                        const cloudExp = expMap.get(localExp.id);
+                        if (!cloudExp || localExp.updatedAt > cloudExp.updatedAt) {
+                            expMap.set(localExp.id, localExp);
+                        }
+                    });
+
+                    const mergedExpenses = Array.from(expMap.values());
+
+                    appData = { travelers: mergedTravelers, expenses: mergedExpenses, activities: mergedActivities };
                 }
 
-                const mergedTravelers = [...new Set([...(cloudData.travelers || []), ...(appData.travelers || [])])];
-
-                const actMap = new Map();
-                (cloudData.activities || []).forEach(a => actMap.set(a.id, a));
-                (appData.activities || []).forEach(a => actMap.set(a.id, a));
-                const mergedActivities = Array.from(actMap.values()).sort((a, b) => b.id - a.id);
-
-                const expMap = new Map();
-                (cloudData.expenses || []).forEach(e => {
-                    if(!e.updatedAt) e.updatedAt = parseInt(e.id) || 0; 
-                    expMap.set(e.id, e);
-                });
-
-                (appData.expenses || []).forEach(localExp => {
-                    if(!localExp.updatedAt) localExp.updatedAt = parseInt(localExp.id) || 0;
-                    const cloudExp = expMap.get(localExp.id);
-                    if (!cloudExp || localExp.updatedAt > cloudExp.updatedAt) {
-                        expMap.set(localExp.id, localExp);
-                    }
-                });
-
-                const mergedExpenses = Array.from(expMap.values());
-
-                appData = { travelers: mergedTravelers, expenses: mergedExpenses, activities: mergedActivities };
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
 
                 await fetch(GOOGLE_SCRIPT_URL, {
@@ -529,7 +532,8 @@
 
                 const card = document.createElement('div');
                 card.className = `glass-card p-5 rounded-3xl flex justify-between items-center fade-in cursor-pointer hover:bg-slate-50 transition-colors`;
-                card.style.animationDelay = `${delay}s`; card.style.opacity = '0'; 
+                card.style.animationDelay = `${delay}s`;
+                card.style.opacity = '0'; 
                 card.onclick = () => openExpenseDetails(exp.id);
                 
                 card.innerHTML = `
@@ -588,6 +592,7 @@
                 transactions.forEach((tx) => {
                     let fromName = tx.from === currentUser.name ? "You" : tx.from;
                     let toName = tx.to === currentUser.name ? "You" : tx.to;
+                    
                     html += `
                         <div class="glass-card p-5 rounded-3xl flex justify-between items-center shadow-glass-sm">
                             <div class="flex-1 pr-4">
@@ -915,7 +920,6 @@
                 btnEq.className = "px-4 py-1.5 text-xs font-bold rounded-md text-slate-500 transition-all hover:bg-slate-200/50";
                 contEx.classList.remove('hidden'); contEq.classList.add('hidden');
                 
-                // Auto-fill exact inputs if empty
                 const exactInputs = document.querySelectorAll('.exact-split-input');
                 const sum = Array.from(exactInputs).reduce((acc, input) => acc + (parseFloat(input.value) || 0), 0);
                 if (sum === 0 && modalAmount > 0) {
@@ -936,14 +940,24 @@
             document.getElementById('btn-split-equal').addEventListener('click', () => setSplitMode('equal'));
             document.getElementById('btn-split-exact').addEventListener('click', () => setSplitMode('exact'));
 
-            document.getElementById('btn-reset').addEventListener('click', () => {
+            document.getElementById('btn-reset').addEventListener('click', async () => {
                 const pass = prompt("🔒 Enter admin password to reset trip:");
                 if (pass === null) return;
                 
                 if (pass === "Prat@112890") {
                     if(confirm("⚠️ DANGER: This will permanently delete all expenses and reset the trip on the cloud too. Are you absolutely sure?")) {
                         appData = { travelers: [currentUser.name], expenses: [], activities: [] };
-                        saveData();
+                        
+                        const splash = document.getElementById('splash-screen');
+                        document.getElementById('splash-text').innerText = "Wiping Cloud Data...";
+                        splash.classList.remove('hidden');
+                        splash.style.opacity = '1';
+
+                        await saveData(true); // <--- TRUE BYPASSES MERGE ENGINE FOR RESET
+                        
+                        splash.style.opacity = '0';
+                        setTimeout(() => splash.classList.add('hidden'), 300);
+
                         switchTab('expenses');
                         alert("Trip has been successfully reset.");
                     }
@@ -1002,7 +1016,6 @@
             const title = document.getElementById('modal-expense-title');
             
             if (id) {
-                // EDIT MODE
                 title.innerText = "Edit Expense";
                 const exp = appData.expenses.find(e => e.id === id);
                 document.getElementById('exp-desc').value = exp.desc;
@@ -1020,7 +1033,6 @@
                 const payerSelect = document.getElementById('exp-payer');
                 payerSelect.innerHTML = appData.travelers.map(t => `<option value="${t}" ${t === exp.payer ? 'selected' : ''}>${t === currentUser.name ? 'You' : t}</option>`).join('');
 
-                // Detect if it was an equal or exact split originally
                 let isEqualSplit = true;
                 const splitKeys = Object.keys(exp.split);
                 const avg = exp.amount / splitKeys.length;
@@ -1028,7 +1040,6 @@
                     if (Math.abs(exp.split[k] - avg) > 0.05) { isEqualSplit = false; break; }
                 }
 
-                // Render Checkboxes (Equal)
                 const cbContainer = document.getElementById('split-checkboxes');
                 cbContainer.innerHTML = appData.travelers.map(t => `
                     <label class="split-cb-wrapper relative block hit-target cursor-pointer">
@@ -1039,7 +1050,6 @@
                     </label>
                 `).join('');
 
-                // Render Inputs (Exact)
                 const exContainer = document.getElementById('exact-inputs-list');
                 exContainer.innerHTML = appData.travelers.map(t => {
                     let val = '';
@@ -1059,7 +1069,6 @@
                 setSplitMode(isEqualSplit ? 'equal' : 'exact');
 
             } else {
-                // ADD MODE
                 title.innerText = "Add Expense";
                 document.getElementById('exp-desc').value = '';
                 document.getElementById('exp-amount').value = '';
@@ -1201,7 +1210,6 @@
                 }
                 if (Object.keys(splitObj).length === 0) return alert("Enter amounts for at least one person.");
                 
-                // Fix rounding drift on the last person
                 const keys = Object.keys(splitObj);
                 const lastKey = keys[keys.length - 1];
                 let drift = finalAmountINR - totalAssignedINR;
@@ -1211,7 +1219,6 @@
             }
 
             if (editingExpenseId) {
-                // Update Existing
                 const index = appData.expenses.findIndex(e => e.id === editingExpenseId);
                 if (index !== -1) {
                     appData.expenses[index] = {
@@ -1223,7 +1230,6 @@
                     logActivity('EDIT', desc, finalAmountINR, currentUser.name);
                 }
             } else {
-                // Create New
                 const newExp = {
                     id: Date.now().toString(),
                     updatedAt: Date.now(),
