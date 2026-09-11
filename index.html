@@ -129,13 +129,16 @@
     <div id="app-wrapper" class="hidden flex-col h-full w-full">
         <header class="glass-header px-5 py-4 flex justify-between items-center z-10 shrink-0 shadow-glass-sm rounded-b-3xl">
             <div>
-                <!-- VERSION BUMP TO V1.7 -->
+                <!-- VERSION BUMP TO V1.8 -->
                 <h1 class="text-2xl font-black text-teal-600 tracking-tight flex items-baseline">
-                    ThaiSplit 🌴 <span class="text-[10px] text-slate-400 font-bold ml-1.5 tracking-normal uppercase">V1.7</span>
+                    ThaiSplit 🌴 <span class="text-[10px] text-slate-400 font-bold ml-1.5 tracking-normal uppercase">V1.8</span>
                 </h1>
                 <p id="user-greeting" class="text-[11px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Welcome</p>
             </div>
             <div class="flex items-center gap-2">
+                <button onclick="forceSync()" class="text-teal-600 text-[10px] uppercase tracking-wider font-bold hit-target px-3 flex items-center justify-center btn-press bg-teal-50 rounded-full border border-teal-100">
+                    Sync
+                </button>
                 <button id="btn-reset" class="text-orange-500 text-[10px] uppercase tracking-wider font-bold hit-target px-3 flex items-center justify-center btn-press bg-orange-50 rounded-full border border-orange-100">
                     Reset
                 </button>
@@ -170,7 +173,6 @@
         </nav>
     </div>
 
-    <!-- MODALS -->
     <!-- FULL SCREEN MODAL: Add/Edit Expense -->
     <div id="modal-expense" class="fixed inset-0 bg-slate-50/95 backdrop-blur-xl z-50 flex flex-col pt-safe hidden transform translate-y-full">
         <div class="flex justify-between items-center px-5 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200/50 shrink-0 relative z-20">
@@ -265,9 +267,9 @@
     <!-- Expense Details Modal -->
     <div id="modal-details" class="fixed inset-0 bg-slate-50/95 backdrop-blur-xl z-50 flex flex-col pt-safe hidden transform translate-y-full">
         <div class="flex justify-between items-center px-5 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200/50 shrink-0">
-            <button onclick="closeDetailsModal()" class="text-slate-500 font-bold hit-target flex items-center btn-press text-sm">Close</button>
+            <button onclick="closeDetailsModal()" class="text-slate-500 font-bold hit-target flex items-center btn-press text-sm w-12">Close</button>
             <h2 class="text-lg font-bold text-slate-800">Expense Details</h2>
-            <button id="btn-edit-expense" class="text-teal-600 font-bold hit-target flex items-center justify-end btn-press text-sm w-12">Edit</button>
+            <div id="details-action-btn" class="w-12"></div> <!-- Dynamically injected Edit button -->
         </div>
         <div id="details-content" class="flex-1 overflow-y-auto px-5 py-6 space-y-6"></div>
     </div>
@@ -299,7 +301,7 @@
         // ==========================================
         // ⚠️ CONFIGURATION: ADD YOUR GOOGLE SCRIPT URL HERE
         // ==========================================
-        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVUwMueDK7RKkU953JiegITUJs-zYrLs-RfM0uZJFGjv3a4bdEt9ikK61V1E7rwTBAJg/exec'; 
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwnwb3tiEDVxVDIEBkfhlc-tH_FKK2hGT4O4HJmITf6e5Wsb4kZ1JEnDlnSi9VTc0Z3ag/exec'; 
         
         const STORAGE_KEY = 'thaiTripData_v8'; 
         const USER_KEY = 'thaiTripCurrentUser';
@@ -312,7 +314,7 @@
         let editingExpenseId = null;
         let splitMode = 'equal'; 
 
-        // --- Core Engine & Merging Sync ---
+        // --- Core Engine & Online Listeners ---
         window.onload = async function () {
             await loadData();
             
@@ -332,6 +334,39 @@
                 showLoginScreen();
             }
         };
+
+        // Problem 4 Fix: Offline-Ghost Engine 
+        window.addEventListener('online', async () => {
+            if (!currentUser) return;
+            const splash = document.getElementById('splash-screen');
+            document.getElementById('splash-text').innerText = "Back Online! Syncing...";
+            splash.classList.remove('hidden');
+            splash.style.opacity = '1';
+            
+            await saveData(); 
+            
+            splash.style.opacity = '0';
+            setTimeout(() => splash.classList.add('hidden'), 300);
+            switchTab(currentTab);
+        });
+
+        window.addEventListener('offline', () => {
+            alert("📶 You are offline. Expenses will be saved securely on your phone and sync automatically when your connection returns.");
+        });
+
+        window.forceSync = async function() {
+            if (!navigator.onLine) return alert("You are currently offline.");
+            const splash = document.getElementById('splash-screen');
+            document.getElementById('splash-text').innerText = "Manual Sync...";
+            splash.classList.remove('hidden');
+            splash.style.opacity = '1';
+            
+            await saveData(); // Implicitly pulls and merges
+            
+            splash.style.opacity = '0';
+            setTimeout(() => splash.classList.add('hidden'), 300);
+            switchTab(currentTab);
+        }
 
         async function loadData() {
             try {
@@ -364,11 +399,10 @@
             }
         }
 
-        // SMART SYNC MERGE ENGINE - Prevents Data Overwrites!
-        // Added skipMerge flag for true wipe on reset
+        // SMART SYNC MERGE ENGINE
         async function saveData(skipMerge = false) {
             try {
-                if (!skipMerge) {
+                if (!skipMerge && navigator.onLine) {
                     const response = await fetch(GOOGLE_SCRIPT_URL);
                     const text = await response.text();
                     let cloudData = { travelers: [], expenses: [], activities: [] };
@@ -397,20 +431,19 @@
                         }
                     });
 
-                    const mergedExpenses = Array.from(expMap.values());
-
-                    appData = { travelers: mergedTravelers, expenses: mergedExpenses, activities: mergedActivities };
+                    appData = { travelers: mergedTravelers, expenses: Array.from(expMap.values()), activities: mergedActivities };
                 }
 
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
 
-                await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(appData),
-                    redirect: 'follow',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
-                });
-
+                if(navigator.onLine) {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify(appData),
+                        redirect: 'follow',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' } 
+                    });
+                }
             } catch (error) {
                 console.error("Cloud sync failed. Saved locally.");
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
@@ -814,15 +847,22 @@
             const dateStr = new Date(exp.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             let payerName = exp.payer === currentUser.name ? "You" : exp.payer;
             
-            document.getElementById('btn-edit-expense').onclick = () => {
-                closeDetailsModal();
-                editingExpenseId = exp.id;
-                setTimeout(() => {
-                    populateExpenseForm(exp.id);
-                    const modalExp = document.getElementById('modal-expense');
-                    modalExp.classList.remove('hidden'); modalExp.classList.add('modal-enter'); modalExp.classList.remove('modal-exit');
-                }, 350);
-            };
+            // Problem 3 Fix: Protect Settlements from being edited
+            const actionContainer = document.getElementById('details-action-btn');
+            if (exp.isSettlement) {
+                actionContainer.innerHTML = ``; // Remove Edit button
+            } else {
+                actionContainer.innerHTML = `<button id="btn-edit-expense" class="text-teal-600 font-bold hit-target flex items-center justify-end btn-press text-sm w-12">Edit</button>`;
+                document.getElementById('btn-edit-expense').onclick = () => {
+                    closeDetailsModal();
+                    editingExpenseId = exp.id;
+                    setTimeout(() => {
+                        populateExpenseForm(exp.id);
+                        const modalExp = document.getElementById('modal-expense');
+                        modalExp.classList.remove('hidden'); modalExp.classList.add('modal-enter'); modalExp.classList.remove('modal-exit');
+                    }, 350);
+                };
+            }
             
             let html = `
                 <div class="bg-white p-6 rounded-3xl shadow-glass-sm text-center border border-slate-100">
@@ -868,12 +908,18 @@
 
         function renderTravelersList() {
             const list = document.getElementById('names-list');
-            list.innerHTML = appData.travelers.map((t, i) => `
+            list.innerHTML = appData.travelers.map((t, i) => {
+                let label = t === currentUser.name ? `${t} (You)` : t;
+                let removeBtn = t !== currentUser.name ? `<button onclick="removeTraveler('${t}')" class="text-[10px] text-orange-500 font-bold px-2 py-1 uppercase tracking-widest hit-target">Remove</button>` : '';
+                return `
                 <div class="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <span class="font-bold text-slate-700 text-sm pl-2">${t}</span>
-                    ${t !== currentUser.name ? `<button onclick="removeTraveler('${t}')" class="text-[10px] text-orange-500 font-bold px-2 py-1 uppercase tracking-widest hit-target">Remove</button>` : `<span class="text-[10px] text-teal-600 font-bold uppercase tracking-widest pr-2">(You)</span>`}
-                </div>
-            `).join('');
+                    <span class="font-bold text-slate-700 text-sm pl-2">${label}</span>
+                    <div class="flex items-center gap-1 pr-1">
+                        <button onclick="editTraveler('${t}')" class="text-[10px] text-teal-600 font-bold px-2 py-1 uppercase tracking-widest hit-target">Edit</button>
+                        ${removeBtn}
+                    </div>
+                </div>`;
+            }).join('');
             if(appData.travelers.length === 0) list.innerHTML = `<p class="text-sm text-slate-400">No travelers yet.</p>`;
         }
 
@@ -890,6 +936,49 @@
             renderTravelersList();
             await saveData();
         });
+
+        // Edit Traveler Name Engine
+        window.editTraveler = async function(oldName) {
+            let newName = prompt(`Enter new name for ${oldName}:`, oldName);
+            if (!newName) return;
+            newName = formatName(newName);
+            if (newName === oldName) return;
+
+            const exists = appData.travelers.find(t => t.toLowerCase() === newName.toLowerCase());
+            if (exists) return alert("That name is already in the trip.");
+
+            // 1. Update Travelers List
+            appData.travelers = appData.travelers.map(t => t === oldName ? newName : t);
+
+            // 2. Deep Update Expenses
+            appData.expenses.forEach(ex => {
+                let modified = false;
+                if (ex.payer === oldName) { ex.payer = newName; modified = true; }
+                if (ex.split[oldName] !== undefined) {
+                    ex.split[newName] = ex.split[oldName];
+                    delete ex.split[oldName];
+                    modified = true;
+                }
+                if (modified) ex.updatedAt = Date.now();
+            });
+
+            // 3. Deep Update Activity Log
+            appData.activities.forEach(act => {
+                if (act.by === oldName) act.by = newName;
+                act.desc = act.desc.replace(oldName, newName);
+            });
+
+            // 4. Update Current User if self
+            if (currentUser.name === oldName) {
+                currentUser.name = newName;
+                localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
+                document.getElementById('user-greeting').innerText = `Hi, ${currentUser.name}`;
+            }
+
+            renderTravelersList();
+            logActivity('EDIT', `Updated name ${oldName} to ${newName}`, 0, currentUser.name);
+            await saveData();
+        }
 
         window.removeTraveler = async function(name) {
             const involved = getValidExpenses().some(e => e.payer === name || Object.keys(e.split).includes(name));
