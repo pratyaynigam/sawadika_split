@@ -103,8 +103,8 @@ function doPost(e) {
 ## 🔐 Admin Controls & Security
 
 To prevent accidental data loss during the trip, the app uses soft-PIN protection:
-* **Delete an Expense:** Requires PIN `5241`. (This performs a "soft delete" to maintain sync integrity).
-* **Reset Entire Trip:** Requires Admin Password `Prat@112890`.
+* **Delete an Expense:** Requires PIN (This performs a "soft delete" to maintain sync integrity).
+* **Reset Entire Trip:** Requires Admin Password
 
 ---
 
